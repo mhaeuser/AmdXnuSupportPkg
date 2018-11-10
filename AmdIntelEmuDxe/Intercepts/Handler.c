@@ -15,8 +15,8 @@ AmdEmuInterceptCpuid (
   IN OUT AMD_EMU_REGISTERS  *Registers
   );
 
-BOOLEAN
-AmdEmuInterceptMsr (
+VOID
+AmdEmuInterceptWrmsr (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
   );
@@ -74,7 +74,10 @@ AmdInterceptionHandler (
 
     case VMEXIT_MSR:
     {
-      RegistersModded = AmdEmuInterceptMsr (&SaveState->RAX, Registers);
+      if (Vmcb->EXITINFO1 == 1) {
+        AmdEmuInterceptWrmsr (&SaveState->RAX, Registers);
+      }
+
       break;
     }
 
