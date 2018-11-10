@@ -285,4 +285,17 @@ AmdEnableVm (
   IN     VOID  *HostStack
   );
 
+UINT64
+AmdIntelEmuInternalReadMsrValue64 (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
+AmdIntelEmuInternalWriteMsrValue64 (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers,
+  IN     UINT64             Value
+  );
+
 #endif // AMD_INTEL_EMU_H_
