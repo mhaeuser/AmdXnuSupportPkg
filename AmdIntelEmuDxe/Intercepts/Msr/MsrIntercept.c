@@ -2,6 +2,8 @@
 
 #include <Register/ArchitecturalMsr.h>
 
+#include <Library/BaseLib.h>
+
 #include "../../AmdIntelEmu.h"
 
 VOID
@@ -25,6 +27,7 @@ AmdEmuInterceptWrmsr (
 
     default:
     {
+      AsmWriteMsr64 (*Rax, AmdIntelEmuInternalReadMsrValue64 (Rax, Registers));
       break;
     }
   }

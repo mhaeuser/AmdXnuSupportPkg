@@ -13,7 +13,7 @@ AmdEmuCpuidLeaf2 (
   OUT UINT32        *Edx
   );
 
-BOOLEAN
+VOID
 AmdEmuInterceptCpuid (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
@@ -33,7 +33,8 @@ AmdEmuInterceptCpuid (
 
     default:
     {
-      return FALSE;
+      AsmCpuid (*Rax, &Eax, &Ebx, &Ecx, &Edx);
+      break;
     }
   }
 
@@ -41,5 +42,4 @@ AmdEmuInterceptCpuid (
   Registers->Rbx = BitFieldWrite32 (Registers->Rbx, 0, 31, Ebx);
   Registers->Rcx = BitFieldWrite32 (Registers->Rcx, 0, 31, Ecx);
   Registers->Rdx = BitFieldWrite32 (Registers->Rdx, 0, 31, Edx);
-  return TRUE;
 }

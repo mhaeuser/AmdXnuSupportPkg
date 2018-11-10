@@ -9,7 +9,7 @@ AmdEmuInterceptUd (
   IN UINT64  *Rip
   );
 
-BOOLEAN
+VOID
 AmdEmuInterceptCpuid (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
@@ -68,7 +68,8 @@ AmdInterceptionHandler (
 
     case VMEXIT_CPUID:
     {
-      RegistersModded = AmdEmuInterceptCpuid (&SaveState->RAX, Registers);
+      AmdEmuInterceptCpuid (&SaveState->RAX, Registers);
+      RegistersModded = TRUE;
       break;
     }
 
