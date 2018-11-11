@@ -26,6 +26,18 @@ AmdIntelEmuInternalWrmsrMiscEnable (
   );
 
 VOID
+AmdIntelEmuInternalRdmsrPlatformId (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
+AmdIntelEmuInternalWrmsrPlatformId (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
 AmdEmuInterceptRdmsr (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
@@ -39,6 +51,12 @@ AmdEmuInterceptRdmsr (
     case MSR_IA32_MISC_ENABLE:
     {
       AmdIntelEmuInternalRdmsrMiscEnable (Rax, Registers);
+      break;
+    }
+
+    case MSR_IA32_PLATFORM_ID:
+    {
+      AmdIntelEmuInternalRdmsrPlatformId (Rax, Registers);
       break;
     }
 
@@ -74,6 +92,12 @@ AmdEmuInterceptWrmsr (
     case MSR_IA32_PAT:
     {
       AmdIntelEmuInternalWrmsrPat (Rax, Registers);
+      break;
+    }
+
+    case MSR_IA32_PLATFORM_ID:
+    {
+      AmdIntelEmuInternalWrmsrPlatformId (Rax, Registers);
       break;
     }
 
