@@ -14,6 +14,15 @@ AmdEmuCpuidLeaf2 (
   );
 
 VOID
+AmdEmuCpuidLeaf4 (
+  IN  UINT32  SubIndex,
+  OUT UINT32  *Eax,
+  OUT UINT32  *Ebx,
+  OUT UINT32  *Ecx,
+  OUT UINT32  *Edx
+  );
+
+VOID
 AmdEmuInterceptCpuid (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
@@ -31,6 +40,8 @@ AmdEmuInterceptCpuid (
 
   CpuidIndex = BitFieldRead32 (*Rax, 0, 31);
 
+  Ecx = (UINT32)Registers->Rcx;
+
   switch (CpuidIndex) {
     case 2:
     {
@@ -38,9 +49,15 @@ AmdEmuInterceptCpuid (
        break;
     }
 
+    case 4:
+    {
+      AmdEmuCpuidLeaf4 (Ecx, &Eax, &Ebx, &Ecx, &Edx);
+      break;
+    }
+
     default:
     {
-      AsmCpuid (CpuidIndex, &Eax, &Ebx, &Ecx, &Edx);
+      AsmCpuidEx (CpuidIndex, Ecx, &Eax, &Ebx, &Ecx, &Edx);
       break;
     }
   }
