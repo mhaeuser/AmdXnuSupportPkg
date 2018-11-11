@@ -6,7 +6,7 @@
 #include <Library/DebugLib.h>
 
 VOID
-AmdEmuCpuidLeaf1 (
+AmdIntelEmuInternalCpuidLeaf1 (
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
   OUT UINT32  *Ecx,

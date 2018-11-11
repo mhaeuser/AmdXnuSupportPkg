@@ -4,7 +4,7 @@
 #include <Library/DebugLib.h>
 
 VOID
-AmdEmuCpuidLeaf4 (
+AmdIntelEmuInternalCpuidLeaf4 (
   IN  UINT32  SubIndex,
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,

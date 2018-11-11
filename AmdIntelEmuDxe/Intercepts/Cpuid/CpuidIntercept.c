@@ -6,7 +6,7 @@
 #include "../../AmdIntelEmu.h"
 
 VOID
-AmdEmuCpuidLeaf0 (
+AmdIntelEmuInternalCpuidLeaf0 (
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
   OUT UINT32  *Ecx,
@@ -14,7 +14,7 @@ AmdEmuCpuidLeaf0 (
   );
 
 VOID
-AmdEmuCpuidLeaf1 (
+AmdIntelEmuInternalCpuidLeaf1 (
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
   OUT UINT32  *Ecx,
@@ -22,7 +22,7 @@ AmdEmuCpuidLeaf1 (
   );
 
 VOID
-AmdEmuCpuidLeaf2 (
+AmdIntelEmuInternalCpuidLeaf2 (
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
   OUT UINT32  *Ecx,
@@ -30,7 +30,7 @@ AmdEmuCpuidLeaf2 (
   );
 
 VOID
-AmdEmuCpuidLeaf4 (
+AmdIntelEmuInternalCpuidLeaf4 (
   IN  UINT32  SubIndex,
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
@@ -70,25 +70,25 @@ AmdEmuInterceptCpuid (
   switch (CpuidIndex) {
     case 0:
     {
-      AmdEmuCpuidLeaf0 (&Eax, &Ebx, &Ecx, &Edx);
+      AmdIntelEmuInternalCpuidLeaf0 (&Eax, &Ebx, &Ecx, &Edx);
       break;
     }
     
     case 1:
     {
-      AmdEmuCpuidLeaf1 (&Eax, &Ebx, &Ecx, &Edx);
+      AmdIntelEmuInternalCpuidLeaf1 (&Eax, &Ebx, &Ecx, &Edx);
       break;
     }
     
     case 2:
     {
-      AmdEmuCpuidLeaf2 (&Eax, &Ebx, &Ecx, &Edx);
+      AmdIntelEmuInternalCpuidLeaf2 (&Eax, &Ebx, &Ecx, &Edx);
       break;
     }
 
     case 4:
     {
-      AmdEmuCpuidLeaf4 (Ecx, &Eax, &Ebx, &Ecx, &Edx);
+      AmdIntelEmuInternalCpuidLeaf4 (Ecx, &Eax, &Ebx, &Ecx, &Edx);
       break;
     }
 

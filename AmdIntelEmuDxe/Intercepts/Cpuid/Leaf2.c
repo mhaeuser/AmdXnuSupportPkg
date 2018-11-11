@@ -135,7 +135,7 @@ InternalCacheInfoToDescriptor (
 }
 
 VOID
-AmdEmuCpuidLeaf2 (
+AmdIntelEmuInternalCpuidLeaf2 (
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
   OUT UINT32  *Ecx,
