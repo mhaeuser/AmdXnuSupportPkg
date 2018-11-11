@@ -148,6 +148,29 @@ typedef union {
   UINT64 Uint64;
 } MSR_AMD_EFER_REGISTER;
 
+#define CPUID_AMD_APIC_ID_SIZE_CORE_COUNT  0x80000008U
+
+typedef union {
+  PACKED struct {
+    UINT32 NC               : 8;
+    UINT32 Reserved1        : 4;
+    UINT32 ApicIdCoreIdSize : 4;
+    UINT32 Reserved2        : 16;
+  }      Bits;
+  UINT32 Uint32;
+} CPUID_AMD_APIC_ID_SIZE_CORE_COUNT_ECX;
+
+#define CPUID_AMD_COMPUTE_UNIT_IDENTIFIERS  0x8000001EU
+
+typedef union {
+  PACKED struct {
+    UINT32 ComputeUnitId       : 8;
+    UINT32 CoresPerComputeUnit : 2;
+    UINT32 Reserved            : 22;
+  }      Bits;
+  UINT32 Uint32;
+} CPUID_AMD_COMPUTE_UNIT_IDENTIFIERS_EBX;
+
 typedef union {
   PACKED struct {
     UINT16 Type     : 4;

@@ -1,6 +1,6 @@
 #include <Base.h>
 
-#include <Register/ArchitecturalMsr.h>
+#include <Register/Msr.h>
 
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
@@ -50,6 +50,18 @@ AmdIntelEmuInternalWrmsrBiosSignId (
   );
 
 VOID
+AmdIntelEmuInternalRdmsrCoreThreadCount (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
+AmdIntelEmuInternalWrmsrCoreThreadCount (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
 AmdEmuInterceptRdmsr (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
@@ -75,6 +87,12 @@ AmdEmuInterceptRdmsr (
     case MSR_IA32_BIOS_SIGN_ID:
     {
       AmdIntelEmuInternalRdmsrBiosSignId (Rax, Registers);
+      break;
+    }
+
+    case MSR_HASWELL_E_CORE_THREAD_COUNT:
+    {
+      AmdIntelEmuInternalRdmsrCoreThreadCount (Rax, Registers);
       break;
     }
 
@@ -122,6 +140,12 @@ AmdEmuInterceptWrmsr (
     case MSR_IA32_BIOS_SIGN_ID:
     {
       AmdIntelEmuInternalWrmsrBiosSignId (Rax, Registers);
+      break;
+    }
+
+    case MSR_HASWELL_E_CORE_THREAD_COUNT:
+    {
+      AmdIntelEmuInternalWrmsrCoreThreadCount (Rax, Registers);
       break;
     }
 
