@@ -14,6 +14,14 @@ AmdEmuCpuidLeaf0 (
   );
 
 VOID
+AmdEmuCpuidLeaf1 (
+  OUT UINT32  *Eax,
+  OUT UINT32  *Ebx,
+  OUT UINT32  *Ecx,
+  OUT UINT32  *Edx
+  );
+
+VOID
 AmdEmuCpuidLeaf2 (
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
@@ -54,6 +62,12 @@ AmdEmuInterceptCpuid (
     case 0:
     {
       AmdEmuCpuidLeaf0 (&Eax, &Ebx, &Ecx, &Edx);
+      break;
+    }
+    
+    case 1:
+    {
+      AmdEmuCpuidLeaf1 (&Eax, &Ebx, &Ecx, &Edx);
       break;
     }
     
