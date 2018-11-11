@@ -379,8 +379,7 @@ AmdEmuVirtualizeSystem (
   // Set up the generic VMCB used on all cores.
   //
   GuestVmcb = (AMD_VMCB_CONTROL_AREA *)GuestVmcbs;
-  GuestVmcb->InterceptCpuid   = 1;
-  GuestVmcb->InterceptMsrProt = 1; // TODO: All but MSRPM, see 15.11
+  GuestVmcb->InterceptCpuid = 1;
   //
   // The current implementation requires that the VMRUN intercept always be set
   // in the VMCB.
@@ -390,6 +389,7 @@ AmdEmuVirtualizeSystem (
   GuestVmcb->MSRPM_BASE_PA  = (UINT64)(UINTN)MsrPm;
   GuestVmcb->GuestAsid      = 1;
   GuestVmcb->VmcbSaveState  = ((UINT64)(UINTN)GuestVmcb + 0x400);
+  AmdIntelEmuInternalInitMsrPm (GuestVmcb);
   //
   // Copy the template to all VMCBs.
   //

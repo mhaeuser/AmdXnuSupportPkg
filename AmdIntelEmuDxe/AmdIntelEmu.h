@@ -421,6 +421,11 @@ AmdEnableVm (
   IN     VOID  *HostStack
   );
 
+VOID
+AmdIntelEmuInternalInitMsrPm (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  );
+
 UINT64
 AmdIntelEmuInternalReadMsrValue64 (
   IN OUT UINT64             *Rax,
