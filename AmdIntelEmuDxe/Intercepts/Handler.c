@@ -4,11 +4,6 @@
 
 #include "../AmdIntelEmu.h"
 
-BOOLEAN
-AmdEmuInterceptUd (
-  IN UINT64  *Rip
-  );
-
 VOID
 AmdEmuInterceptCpuid (
   IN OUT UINT64             *Rax,
@@ -36,7 +31,6 @@ AmdInterceptionHandler (
 {
   UINT32                          VmcbCleanBits;
   BOOLEAN                         RegistersModded;
-  BOOLEAN                         Result;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   //
   // For forward compatibility, if the hypervisor has not modified the VMCB,
@@ -50,28 +44,6 @@ AmdInterceptionHandler (
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
 
   switch (Vmcb->EXITCODE) {
-    case VMEXIT_EXCP_UD:
-    {
-      ASSERT (SaveState != NULL);
-      ASSERT (SaveState->CS.Base == 0);
-      ASSERT (SaveState->RIP != 0);
-
-      Result = AmdEmuInterceptUd (&SaveState->RIP);
-      if (!Result) {
-        //
-        // Clean the #UD bit so the guest gets to handle the exception.
-        // It is not expected that normal guest operation will be resumed.
-        //
-        Vmcb->InterceptExceptionVectors &= ~(UINT32)AMD_VMCB_EXCEPTION_UD;
-        //
-        // Clear the Intercept bit.
-        //
-        VmcbCleanBits &= ~(UINT32)BIT0;
-      }
-
-      break;
-    }
-
     case VMEXIT_CPUID:
     {
       AmdEmuInterceptCpuid (&SaveState->RAX, Registers);
