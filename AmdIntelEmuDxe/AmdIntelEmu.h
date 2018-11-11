@@ -17,7 +17,7 @@
 
 #define MSR_VM_CR  0xC0010114U
 
-typedef PACKED union {
+typedef union {
   PACKED struct {
     UINT32 DPD       : 1;
     UINT32 R_INIT    : 1;
@@ -30,7 +30,107 @@ typedef PACKED union {
   UINT64 Uint64;
 } MSR_VM_CR_REGISTER;
 
-typedef PACKED union {
+#define MSR_AMD_CPUID_EXT_FEATURES  0xC0011005U
+
+typedef union {
+  PACKED struct {
+    UINT32 FPU                     : 1;
+    UINT32 VME                     : 1;
+    UINT32 DE                      : 1;
+    UINT32 PSE                     : 1;
+    UINT32 TSC                     : 1;
+    UINT32 MSR                     : 1;
+    UINT32 PAE                     : 1;
+    UINT32 MCE                     : 1;
+    UINT32 CMPXCHG8B               : 1;
+    UINT32 APIC                    : 1;
+    UINT32 Reserved1               : 1;
+    UINT32 SysCallSysRet           : 1;
+    UINT32 MTRR                    : 1;
+    UINT32 PGE                     : 1;
+    UINT32 MCA                     : 1;
+    UINT32 CMOV                    : 1;
+    UINT32 PAT                     : 1;
+    UINT32 PSE36                   : 1;
+    UINT32 Reserved2               : 2;
+    UINT32 NX                      : 1;
+    UINT32 Reserved3               : 1;
+    UINT32 MmxExt                  : 1;
+    UINT32 MMX                     : 1;
+    UINT32 FXSR                    : 1;
+    UINT32 Page1GB                 : 1;
+    UINT32 RDTSCP                  : 1;
+    UINT32 Reserved4               : 1;
+    UINT32 LM                      : 1;
+    UINT32 ThreeDNowExt            : 1;
+    UINT32 ThreeDNow               : 1;
+    UINT32 LahfSahf                : 1;
+    UINT32 CmpLegacy               : 1;
+    UINT32 SVM                     : 1;
+    UINT32 ExtApicSpace            : 1;
+    UINT32 AltMovCr8               : 1;
+    UINT32 ABM                     : 1;
+    UINT32 SSE4A                   : 1;
+    UINT32 MisAlignSse             : 1;
+    UINT32 ThreeDNowPrefetch       : 1;
+    UINT32 OSVW                    : 1;
+    UINT32 IBS                     : 1;
+    UINT32 XOP                     : 1;
+    UINT32 SKINIT                  : 1;
+    UINT32 WDT                     : 1;
+    UINT32 Reserved5               : 1;
+    UINT32 LWP                     : 1;
+    UINT32 FMA4                    : 1;
+    UINT32 TCE                     : 1;
+    UINT32 Reserved6               : 4;
+    UINT32 TopologyExtensions      : 1;
+    UINT32 PerfCtrExtDFCore        : 1;
+    UINT32 PerfCtrExtDF            : 1;
+    UINT32 Reserved7               : 1;
+    UINT32 DataBreakpointExtension : 1;
+    UINT32 PerfTsc                 : 1;
+    UINT32 PerfCtrExtL3            : 1;
+    UINT32 MwaitExtended           : 1;
+    UINT32 Reserved8               : 2;
+  }      Bits;
+  UINT64 Uint64;
+} MSR_AMD_CPUID_EXT_FEATURES_REGISTER;
+
+#define MSR_AMD_HWCR  0xC0010015U
+
+typedef union {
+  PACKED struct {
+    UINT32 SmmLock             : 1;
+    UINT32 Reserved1           : 2;
+    UINT32 TlbCacheDis         : 1;
+    UINT32 INVDWBINVD          : 1;
+    UINT32 Reserved2           : 2;
+    UINT32 AllowFerrOnNe       : 1;
+    UINT32 IgnneEm             : 1;
+    UINT32 MonWaitDis          : 1;
+    UINT32 MonMwaitUserEn      : 1;
+    UINT32 Reserved3           : 2;
+    UINT32 SmiSpCycDis         : 1;
+    UINT32 Reserved4           : 2;
+    UINT32 Wrap32Dis           : 1;
+    UINT32 McStatusWrEn        : 1;
+    UINT32 Reserved5           : 1;
+    UINT32 IoCfgGpFault        : 1;
+    UINT32 LockTscToCurrentP0  : 1;
+    UINT32 Reserved6           : 2;
+    UINT32 TscFreqSel          : 1;
+    UINT32 CpbDis              : 1;
+    UINT32 EffFreqCntMwait     : 1;
+    UINT32 EffFreqReadOnlyLock : 1;
+    UINT32 Reserved7           : 1;
+    UINT32 CSEnable            : 1;
+    UINT32 IRPerfEn            : 1;
+    UINT32 Reserved8           : 31;
+  }      Bits;
+  UINT64 Uint64;
+} MSR_AMD_HWCR_REGISTER;
+
+typedef union {
   PACKED struct {
     UINT32 SCE       : 1;
     UINT32 Reserved1 : 7;
@@ -44,11 +144,11 @@ typedef PACKED union {
     UINT32 TCE       : 1;
     UINT32 Reserved3 : 16;
     UINT32 Reserved4 : 32;
-  } Bits;
+  }      Bits;
   UINT64 Uint64;
 } MSR_AMD_EFER_REGISTER;
 
-typedef PACKED union {
+typedef union {
   PACKED struct {
     UINT16 Type     : 4;
     UINT16 S        : 1;

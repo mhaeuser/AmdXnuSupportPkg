@@ -16,7 +16,7 @@
 #define PAT_UCMINUS  0x07ULL
 
 VOID
-AmdEmuMsrUpdatePat (
+AmdIntelEmuInternalWrmsrPat (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
   )

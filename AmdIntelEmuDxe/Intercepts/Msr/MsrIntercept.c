@@ -8,10 +8,51 @@
 #include "../../AmdIntelEmu.h"
 
 VOID
-AmdEmuMsrUpdatePat (
+AmdIntelEmuInternalWrmsrPat (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
   );
+
+VOID
+AmdIntelEmuInternalRdmsrMiscEnable (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
+AmdIntelEmuInternalWrmsrMiscEnable (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
+AmdEmuInterceptRdmsr (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  )
+{
+  UINT32 MsrIndex;
+
+  MsrIndex = BitFieldRead32 (Registers->Rcx, 0, 31);
+
+  switch (MsrIndex) {
+    case MSR_IA32_MISC_ENABLE:
+    {
+      AmdIntelEmuInternalRdmsrMiscEnable (Rax, Registers);
+      break;
+    }
+
+    default:
+    {
+      AmdIntelEmuInternalWriteMsrValue64 (
+        Rax,
+        Registers,
+        AsmReadMsr64 (MsrIndex)
+        );
+      break;
+    }
+  }
+}
 
 VOID
 AmdEmuInterceptWrmsr (
@@ -24,9 +65,15 @@ AmdEmuInterceptWrmsr (
   MsrIndex = BitFieldRead32 (Registers->Rcx, 0, 31);
 
   switch (MsrIndex) {
+    case MSR_IA32_MISC_ENABLE:
+    {
+      AmdIntelEmuInternalWrmsrMiscEnable (Rax, Registers);
+      break;
+    }
+
     case MSR_IA32_PAT:
     {
-      AmdEmuMsrUpdatePat (Rax, Registers);
+      AmdIntelEmuInternalWrmsrPat (Rax, Registers);
       break;
     }
 
