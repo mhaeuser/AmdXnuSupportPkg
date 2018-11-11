@@ -18,7 +18,11 @@ AmdEmuInterceptWrmsr (
   IN OUT AMD_EMU_REGISTERS  *Registers
   )
 {
-  switch (*Rax) {
+  UINT32 MsrIndex;
+
+  MsrIndex = BitFieldRead32 (Registers->Rcx, 0, 31);
+
+  switch (MsrIndex) {
     case MSR_IA32_PAT:
     {
       AmdEmuMsrUpdatePat (Rax, Registers);
@@ -27,7 +31,10 @@ AmdEmuInterceptWrmsr (
 
     default:
     {
-      AsmWriteMsr64 (*Rax, AmdIntelEmuInternalReadMsrValue64 (Rax, Registers));
+      AsmWriteMsr64 (
+        MsrIndex,
+        AmdIntelEmuInternalReadMsrValue64 (Rax, Registers)
+        );
       break;
     }
   }

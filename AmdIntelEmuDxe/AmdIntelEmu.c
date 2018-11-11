@@ -373,7 +373,7 @@ AmdEmuVirtualizeSystem (
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
   ZeroMem (MsrPm, (4 * SIZE_4KB));
-  ZeroMem (GuestVmcbs, ((1 * Context->NumEnabledProcessors) * SIZE_4KB));
+  ZeroMem (GuestVmcbs, (Context->NumEnabledProcessors * SIZE_4KB));
   //
   // Set up the generic VMCB used on all cores.
   //
@@ -469,6 +469,7 @@ InternalExitBootServices (
   IN VOID       *Context
   )
 {
+  ASSERT (Context != NULL);
   AmdEmuVirtualizeSystem ((AMD_EMU_PRIVATE *)Context);
 }
 

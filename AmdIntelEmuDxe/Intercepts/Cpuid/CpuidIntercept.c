@@ -1,16 +1,16 @@
 #include <Base.h>
 
 #include <Library/BaseLib.h>
+#include <Library/DebugLib.h>
 
 #include "../../AmdIntelEmu.h"
 
 VOID
 AmdEmuCpuidLeaf2 (
-  IN  CONST UINT32  *CpuidData,
-  OUT UINT32        *Eax,
-  OUT UINT32        *Ebx,
-  OUT UINT32        *Ecx,
-  OUT UINT32        *Edx
+  OUT UINT32  *Eax,
+  OUT UINT32  *Ebx,
+  OUT UINT32  *Ecx,
+  OUT UINT32  *Edx
   );
 
 VOID
@@ -19,21 +19,28 @@ AmdEmuInterceptCpuid (
   IN OUT AMD_EMU_REGISTERS  *Registers
   )
 {
+  UINT32 CpuidIndex;
+
   UINT32 Eax;
   UINT32 Ebx;
   UINT32 Ecx;
   UINT32 Edx;
 
-  switch (*Rax) {
+  ASSERT (Rax != NULL);
+  ASSERT (Registers != NULL);
+
+  CpuidIndex = BitFieldRead32 (*Rax, 0, 31);
+
+  switch (CpuidIndex) {
     case 2:
     {
-       AmdEmuCpuidLeaf2 (NULL, &Eax, &Ebx, &Ecx, &Edx);
+       AmdEmuCpuidLeaf2 (&Eax, &Ebx, &Ecx, &Edx);
        break;
     }
 
     default:
     {
-      AsmCpuid (*Rax, &Eax, &Ebx, &Ecx, &Edx);
+      AsmCpuid (CpuidIndex, &Eax, &Ebx, &Ecx, &Edx);
       break;
     }
   }
