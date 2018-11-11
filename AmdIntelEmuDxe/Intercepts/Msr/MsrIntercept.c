@@ -38,6 +38,18 @@ AmdIntelEmuInternalWrmsrPlatformId (
   );
 
 VOID
+AmdIntelEmuInternalRdmsrBiosSignId (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
+AmdIntelEmuInternalWrmsrBiosSignId (
+  IN OUT UINT64             *Rax,
+  IN OUT AMD_EMU_REGISTERS  *Registers
+  );
+
+VOID
 AmdEmuInterceptRdmsr (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
@@ -57,6 +69,12 @@ AmdEmuInterceptRdmsr (
     case MSR_IA32_PLATFORM_ID:
     {
       AmdIntelEmuInternalRdmsrPlatformId (Rax, Registers);
+      break;
+    }
+
+    case MSR_IA32_BIOS_SIGN_ID:
+    {
+      AmdIntelEmuInternalRdmsrBiosSignId (Rax, Registers);
       break;
     }
 
@@ -98,6 +116,12 @@ AmdEmuInterceptWrmsr (
     case MSR_IA32_PLATFORM_ID:
     {
       AmdIntelEmuInternalWrmsrPlatformId (Rax, Registers);
+      break;
+    }
+
+    case MSR_IA32_BIOS_SIGN_ID:
+    {
+      AmdIntelEmuInternalWrmsrBiosSignId (Rax, Registers);
       break;
     }
 
