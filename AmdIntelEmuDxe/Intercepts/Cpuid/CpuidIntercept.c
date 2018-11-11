@@ -39,6 +39,14 @@ AmdIntelEmuInternalCpuidLeaf4 (
   );
 
 VOID
+AmdIntelEmuInternalCpuidLeaf7 (
+  OUT UINT32  *Eax,
+  OUT UINT32  *Ebx,
+  OUT UINT32  *Ecx,
+  OUT UINT32  *Edx
+  );
+
+VOID
 AmdEmuInterceptCpuidVmm (
   IN  UINT32  Index,
   OUT UINT32  *Eax,
@@ -89,6 +97,12 @@ AmdEmuInterceptCpuid (
     case 4:
     {
       AmdIntelEmuInternalCpuidLeaf4 (Ecx, &Eax, &Ebx, &Ecx, &Edx);
+      break;
+    }
+
+    case 7:
+    {
+      AmdIntelEmuInternalCpuidLeaf7 (&Eax, &Ebx, &Ecx, &Edx);
       break;
     }
 
