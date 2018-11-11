@@ -30,8 +30,6 @@ typedef PACKED union {
   UINT64 Uint64;
 } MSR_VM_CR_REGISTER;
 
-#define MSR_EFER  0xC0000080U
-
 typedef PACKED union {
   PACKED struct {
     UINT32 SCE       : 1;
@@ -48,7 +46,7 @@ typedef PACKED union {
     UINT32 Reserved4 : 32;
   } Bits;
   UINT64 Uint64;
-} MSR_EFER_REGISTER;
+} MSR_AMD_EFER_REGISTER;
 
 typedef PACKED union {
   PACKED struct {

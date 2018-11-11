@@ -1,6 +1,7 @@
 #include <PiDxe.h>
 
 #include <Register/Amd/Cpuid.h>
+#include <Register/Msr.h>
 
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -203,8 +204,8 @@ InternalLaunchVmEnvironment (
   )
 {
   AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState;
-  MSR_VM_CR_REGISTER               VmCrRegister;
-  MSR_EFER_REGISTER                EferRegister;
+  MSR_VM_CR_REGISTER               VmCrMsr;
+  MSR_AMD_EFER_REGISTER            EferMsr;
   IA32_DESCRIPTOR                  Gdtr;
   CONST IA32_SEGMENT_DESCRIPTOR    *LdtrDesc;
   IA32_DESCRIPTOR                  Ldtr;
@@ -222,16 +223,16 @@ InternalLaunchVmEnvironment (
   //
   // Enable SVM.
   //
-  VmCrRegister.Uint64 = AsmReadMsr64 (MSR_VM_CR);
+  VmCrMsr.Uint64 = AsmReadMsr64 (MSR_VM_CR);
   //
   // The VMRUN, VMLOAD, VMSAVE, CLGI, VMMCALL, and INVLPGA instructions can be
   // used when the EFER.SVME is set to 1
   //
-  EferRegister.Uint64 = AsmReadMsr64 (MSR_EFER);
-  if (EferRegister.Bits.SVME == 0) {
-    ASSERT (VmCrRegister.Bits.SVMDIS == 0);
-    EferRegister.Bits.SVME = 1;
-    AsmWriteMsr64 (MSR_EFER, EferRegister.Uint64);
+  EferMsr.Uint64 = AsmReadMsr64 (MSR_IA32_EFER);
+  if (EferMsr.Bits.SVME == 0) {
+    ASSERT (VmCrMsr.Bits.SVMDIS == 0);
+    EferMsr.Bits.SVME = 1;
+    AsmWriteMsr64 (MSR_IA32_EFER, EferMsr.Uint64);
   }
   //
   // The effect of turning off EFER.SVME while a guest is running is undefined;
@@ -240,9 +241,9 @@ InternalLaunchVmEnvironment (
   // information, see descriptions of LOCK and SMVE_DISABLE bits in Section
   // 15.30.1, "VM_CR MSR (C001_0114h)" on page 526.
   //
-  if (VmCrRegister.Bits.LOCK == 0) {
-    VmCrRegister.Bits.LOCK = 1;
-    AsmWriteMsr64 (MSR_VM_CR, VmCrRegister.Uint64);
+  if (VmCrMsr.Bits.LOCK == 0) {
+    VmCrMsr.Bits.LOCK = 1;
+    AsmWriteMsr64 (MSR_VM_CR, VmCrMsr.Uint64);
   }
   //
   // Set up the Save State structure.
@@ -292,7 +293,7 @@ InternalLaunchVmEnvironment (
   // RIP and RSP are set in NASM, RAX may be 0 as it is non-volatile (EFIAPI).
   // G_PAT is not set because nested paging is not used.
   //
-  SaveState->EFER         = EferRegister.Uint64;
+  SaveState->EFER         = EferMsr.Uint64;
   SaveState->CR4          = AsmReadCr4 ();
   SaveState->CR3          = AsmReadCr3 ();
   SaveState->CR0          = AsmReadCr0 ();
