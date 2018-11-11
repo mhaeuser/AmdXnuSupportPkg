@@ -34,4 +34,8 @@ AmdEmuCpuidLeaf1 (
   // Ebx to Edx are compatible, Intel-only fields will return 0 as intended.
   //
   AsmCpuid (CPUID_VERSION_INFO, NULL, Ebx, Ecx, Edx);
+  //
+  // This bit signals hypervisor presence.
+  //
+  *Ecx |= BIT31;
 }

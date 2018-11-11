@@ -39,6 +39,15 @@ AmdEmuCpuidLeaf4 (
   );
 
 VOID
+AmdEmuInterceptCpuidVmm (
+  IN  UINT32  Index,
+  OUT UINT32  *Eax,
+  OUT UINT32  *Ebx,
+  OUT UINT32  *Ecx,
+  OUT UINT32  *Edx
+  );
+
+VOID
 AmdEmuInterceptCpuid (
   IN OUT UINT64             *Rax,
   IN OUT AMD_EMU_REGISTERS  *Registers
@@ -85,7 +94,12 @@ AmdEmuInterceptCpuid (
 
     default:
     {
-      AsmCpuidEx (CpuidIndex, Ecx, &Eax, &Ebx, &Ecx, &Edx);
+      if ((CpuidIndex < 0x40000000) || (CpuidIndex > 0x400000FF)) {
+        AsmCpuidEx (CpuidIndex, Ecx, &Eax, &Ebx, &Ecx, &Edx);
+      } else {
+        AmdEmuInterceptCpuidVmm (CpuidIndex, &Eax, &Ebx, &Ecx, &Edx);
+      }
+
       break;
     }
   }

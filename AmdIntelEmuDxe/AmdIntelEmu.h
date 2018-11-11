@@ -130,6 +130,21 @@ typedef union {
   UINT64 Uint64;
 } MSR_AMD_HWCR_REGISTER;
 
+#define MSR_AMD_PSTATE0_DEF  0xC0010064U
+
+typedef union {
+  PACKED struct {
+    UINT32 CpuFid   : 8;
+    UINT32 CpuDfsId : 6;
+    UINT32 CpuVid   : 8;
+    UINT32 IddValue : 8;
+    UINT32 IddDiv   : 2;
+    UINT32 Reserved : 30;
+    UINT32 PstateEn : 1;
+  }      Bits;
+  UINT64 Uint64;
+} MSR_AMD_PSTATE_DEF_REGISTER;
+
 typedef union {
   PACKED struct {
     UINT32 SCE       : 1;
