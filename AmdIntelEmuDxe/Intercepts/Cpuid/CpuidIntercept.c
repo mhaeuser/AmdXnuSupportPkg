@@ -6,6 +6,14 @@
 #include "../../AmdIntelEmu.h"
 
 VOID
+AmdEmuCpuidLeaf0 (
+  OUT UINT32  *Eax,
+  OUT UINT32  *Ebx,
+  OUT UINT32  *Ecx,
+  OUT UINT32  *Edx
+  );
+
+VOID
 AmdEmuCpuidLeaf2 (
   OUT UINT32  *Eax,
   OUT UINT32  *Ebx,
@@ -43,10 +51,16 @@ AmdEmuInterceptCpuid (
   Ecx = (UINT32)Registers->Rcx;
 
   switch (CpuidIndex) {
+    case 0:
+    {
+      AmdEmuCpuidLeaf0 (&Eax, &Ebx, &Ecx, &Edx);
+      break;
+    }
+    
     case 2:
     {
-       AmdEmuCpuidLeaf2 (&Eax, &Ebx, &Ecx, &Edx);
-       break;
+      AmdEmuCpuidLeaf2 (&Eax, &Ebx, &Ecx, &Edx);
+      break;
     }
 
     case 4:
