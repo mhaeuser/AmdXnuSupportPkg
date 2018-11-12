@@ -1,6 +1,8 @@
 #ifndef AMD_INTEL_EMU_H_
 #define AMD_INTEL_EMU_H_
 
+#define CR0_CD  BIT30
+
 #pragma pack (1)
 
 //

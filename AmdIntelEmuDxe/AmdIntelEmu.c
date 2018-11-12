@@ -210,6 +210,7 @@ InternalLaunchVmEnvironment (
   CONST IA32_SEGMENT_DESCRIPTOR    *LdtrDesc;
   IA32_DESCRIPTOR                  Ldtr;
   IA32_DESCRIPTOR                  Idtr;
+  UINTN                            Cr0;
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(
                 (UINTN)GuestVmcb->VmcbSaveState
@@ -293,10 +294,11 @@ InternalLaunchVmEnvironment (
   // RIP and RSP are set in NASM, RAX may be 0 as it is non-volatile (EFIAPI).
   // G_PAT is not set because nested paging is not used.
   //
+  Cr0                     = AsmReadCr0 ();
   SaveState->EFER         = EferMsr.Uint64;
   SaveState->CR4          = AsmReadCr4 ();
   SaveState->CR3          = AsmReadCr3 ();
-  SaveState->CR0          = AsmReadCr0 ();
+  SaveState->CR0          = Cr0;
   SaveState->DR7          = AsmReadDr7 ();
   SaveState->DR6          = AsmReadDr6 ();
   SaveState->RFLAGS       = AsmReadEflags ();
@@ -306,6 +308,14 @@ InternalLaunchVmEnvironment (
   SaveState->BR_TO        = AsmReadMsr64 (BR_TO_MSR);
   SaveState->LASTEXCPFROM = AsmReadMsr64 (LASTEXCP_FROM_IP_MSR);
   SaveState->LASTEXCPTO   = AsmReadMsr64 (LASTEXCP_TO_IP_MSR);
+  //
+  // Enable caching on the host, this means the guest has control of the CD
+  // setting.  This will be rolled back due to the guest context switch when
+  // returning from AmdEnableVm() if caching has been disabled before.
+  //
+  if ((Cr0 & CR0_CD) != 0) {
+    AsmWriteCr0 (Cr0 & ~(UINTN)CR0_CD);
+  }
   //
   // Virtualize the current execution environment.  This call will return here.
   //
