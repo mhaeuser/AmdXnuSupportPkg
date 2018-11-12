@@ -25,6 +25,7 @@ typedef struct {
 } AMD_EMU_THREAD_PRIVATE;
 
 typedef struct {
+  UINTN                    Size;
   EFI_MP_SERVICES_PROTOCOL *MpServices;
   UINTN                    NumProcessors;
   UINTN                    NumEnabledProcessors;
@@ -298,6 +299,7 @@ InternalLaunchVmEnvironment (
   SaveState->EFER         = EferMsr.Uint64;
   SaveState->CR4          = AsmReadCr4 ();
   SaveState->CR3          = AsmReadCr3 ();
+  SaveState->G_PAT        = AsmReadMsr64 (MSR_IA32_PAT);
   SaveState->CR0          = Cr0;
   SaveState->DR7          = AsmReadDr7 ();
   SaveState->DR6          = AsmReadDr6 ();
@@ -339,6 +341,48 @@ InternalVirtualizeAp (
     Private->HostVmcb,
     Private->HostStack
     );
+}
+
+STATIC
+BOOLEAN
+InternalSplitAndUnmapPage (
+  IN VOID                  *Context,
+  IN EFI_PHYSICAL_ADDRESS  Address,
+  IN UINTN                 Size
+  )
+{
+  AMD_EMU_PRIVATE *Private;
+  UINTN           Start;
+  UINTN           End;
+
+  ASSERT (Context != NULL);
+  ASSERT (Size > 0);
+
+  Private = (AMD_EMU_PRIVATE *)Context;
+  Start   = (UINTN)Private;
+  End     = (Start + Private->Size);
+
+  if (Private->Size > Size) {
+    //
+    // Verify the page passed is contained in the VMM data range.
+    //
+    if ((Address >= Start) && ((Address + Size) <= End)) {
+      return TRUE;
+    }
+  } else {
+    //
+    // Verify the VMM data range is contained in the page passed.
+    //
+    if ((Start >= Address) && (End <= (Address + Size))) {
+      return TRUE;
+    }
+  }
+  //
+  // ASSERT there is no inter-page overlap.
+  //
+  ASSERT ((End <= Address) || (Start >= (Address + Size)));
+
+  return FALSE;
 }
 
 STATIC
@@ -398,6 +442,11 @@ AmdEmuVirtualizeSystem (
   GuestVmcb->IOPM_BASE_PA   = (UINT64)(UINTN)IoPm;
   GuestVmcb->MSRPM_BASE_PA  = (UINT64)(UINTN)MsrPm;
   GuestVmcb->GuestAsid      = 1;
+  GuestVmcb->NP_ENABLE      = 1;
+  GuestVmcb->N_CR3          = CreateIdentityMappingPageTables (
+                                Context,
+                                InternalSplitAndUnmapPage
+                                );
   GuestVmcb->VmcbSaveState  = ((UINT64)(UINTN)GuestVmcb + 0x400);
   AmdIntelEmuInternalInitMsrPm (GuestVmcb);
   //
@@ -488,6 +537,7 @@ AmdEmuEntryPoint (
   VOID
   )
 {
+  UINTN                    Size;
   AMD_EMU_PRIVATE          *Memory;
   EFI_STATUS               Status;
   EFI_MP_SERVICES_PROTOCOL *MpServices;
@@ -539,14 +589,16 @@ AmdEmuEntryPoint (
   }
   //
   // AmdEmuVirtualizeSystem() assumes this size setup.
+  // Allocate at a 2 MB boundary so they will be covered by a single 2 MB Page
+  // Table entry.
   //
-  Memory = AllocateReservedPages (
-             3 + 1 + (NumEnabledProcessors * (AMD_EMU_STACK_PAGES + 2))
-             );
+  Size   = (3 + 1 + (NumEnabledProcessors * (AMD_EMU_STACK_PAGES + 2)));
+  Memory = AllocateAlignedReservedPages (Size, SIZE_2MB);
   if (Memory == NULL) {
     return FALSE;
   }
 
+  Memory->Size                 = Size;
   Memory->MpServices           = MpServices;
   Memory->NumProcessors        = NumProcessors;
   Memory->NumEnabledProcessors = NumEnabledProcessors;

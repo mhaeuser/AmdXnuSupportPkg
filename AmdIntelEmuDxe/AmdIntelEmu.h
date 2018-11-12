@@ -441,4 +441,40 @@ AmdIntelEmuInternalWriteMsrValue64 (
   IN     UINT64             Value
   );
 
+/**
+  The function will check if page table entry should be splitted to smaller
+  granularity to unmap.
+
+  @param[in] Context  The function context.
+  @param[in] Address  Physical memory address.
+  @param[in] Size     Size of the given physical memory.
+
+  @retval TRUE   Page table should be split to unmap.
+  @retval FALSE  Page table should not be split to unmap.
+**/
+typedef
+BOOLEAN
+(*AMD_INTEL_EMU_UNMAP_SPLIT_PAGE) (
+  IN VOID                  *Context,
+  IN EFI_PHYSICAL_ADDRESS  Address,
+  IN UINTN                 Size
+  );
+
+/**
+  Allocates and fills in the Page Directory and Page Table Entries to
+  establish a 1:1 Virtual to Physical mapping.
+
+  @param[in] Context         The function context.
+  @param[in] SplitUnmapPage  Function to check whether to split and unmap.
+
+  @return The address of 4 level page map.
+
+**/
+UINTN
+CreateIdentityMappingPageTables (
+  IN VOID                            *Context,
+  IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE  SplitUnmapPage
+  
+  );
+
 #endif // AMD_INTEL_EMU_H_
