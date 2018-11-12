@@ -217,8 +217,8 @@ AmdIntelEmuInternalInterceptWrmsr (
 
 UINT64
 AmdIntelEmuInternalReadMsrValue64 (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN CONST UINT64             *Rax,
+  IN CONST AMD_EMU_REGISTERS  *Registers
   )
 {
   UINT64 Value;
