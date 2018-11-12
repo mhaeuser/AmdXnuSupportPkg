@@ -191,7 +191,7 @@ typedef struct {
 **/
 VOID
 Split2MPageTo4K (
-  IN VOID                               *Context,
+  IN CONST VOID                         *Context,
   IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE     SplitUnmapPage,
   IN EFI_PHYSICAL_ADDRESS               PhysicalAddress,
   IN OUT UINT64                         *PageEntry2M

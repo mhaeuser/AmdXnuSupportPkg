@@ -346,14 +346,14 @@ InternalVirtualizeAp (
 STATIC
 BOOLEAN
 InternalSplitAndUnmapPage (
-  IN VOID                  *Context,
+  IN CONST VOID            *Context,
   IN EFI_PHYSICAL_ADDRESS  Address,
   IN UINTN                 Size
   )
 {
-  AMD_EMU_PRIVATE *Private;
-  UINTN           Start;
-  UINTN           End;
+  CONST AMD_EMU_PRIVATE *Private;
+  UINTN                 Start;
+  UINTN                 End;
 
   ASSERT (Context != NULL);
   ASSERT (Size > 0);

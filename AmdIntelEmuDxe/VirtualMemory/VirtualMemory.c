@@ -167,7 +167,7 @@ AllocatePageTableMemory (
 **/
 VOID
 Split2MPageTo4K (
-  IN VOID                               *Context,
+  IN CONST VOID                         *Context,
   IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE     SplitUnmapPage,
   IN EFI_PHYSICAL_ADDRESS               PhysicalAddress,
   IN OUT UINT64                         *PageEntry2M
@@ -213,7 +213,7 @@ Split2MPageTo4K (
 **/
 VOID
 Split1GPageTo2M (
-  IN VOID                               *Context,
+  IN CONST VOID                         *Context,
   IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE     SplitUnmapPage,
   IN EFI_PHYSICAL_ADDRESS               PhysicalAddress,
   IN OUT UINT64                         *PageEntry1G
@@ -419,7 +419,7 @@ EnablePageTableProtection (
 **/
 UINTN
 CreateIdentityMappingPageTables (
-  IN VOID                            *Context,
+  IN CONST VOID                      *Context,
   IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE  SplitUnmapPage
   )
 {
@@ -603,4 +603,3 @@ CreateIdentityMappingPageTables (
 
   return (UINTN)PageMap;
 }
-
