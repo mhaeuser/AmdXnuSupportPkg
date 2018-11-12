@@ -8,27 +8,31 @@
 
 VOID
 AmdIntelEmuInternalRdmsrPlatformId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   MSR_IA32_PLATFORM_ID_REGISTER PlatformIdMsr;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
 
   PlatformIdMsr.Uint64          = 0;
   PlatformIdMsr.Bits.PlatformId = 1;
-  AmdIntelEmuInternalWriteMsrValue64 (Rax, Registers, PlatformIdMsr.Uint64);
+  AmdIntelEmuInternalWriteMsrValue64 (
+    &SaveState->RAX,
+    Registers,
+    PlatformIdMsr.Uint64
+    );
 }
 
 VOID
 AmdIntelEmuInternalWrmsrPlatformId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
   //
   // PLATFORM_ID is read-only.

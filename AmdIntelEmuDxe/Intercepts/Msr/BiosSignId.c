@@ -11,32 +11,36 @@ STATIC UINT32 mMicrocodeUpdateSignature = 186;
 
 VOID
 AmdIntelEmuInternalRdmsrBiosSignId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   MSR_IA32_BIOS_SIGN_ID_REGISTER BiosSignIdMsr;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
 
   BiosSignIdMsr.Uint64                        = 0;
   BiosSignIdMsr.Bits.MicrocodeUpdateSignature = mMicrocodeUpdateSignature;
-  AmdIntelEmuInternalWriteMsrValue64 (Rax, Registers, BiosSignIdMsr.Uint64);
+  AmdIntelEmuInternalWriteMsrValue64 (
+    &SaveState->RAX,
+    Registers,
+    BiosSignIdMsr.Uint64
+    );
 }
 
 VOID
 AmdIntelEmuInternalWrmsrBiosSignId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   UINT64 Value;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
 
-  Value = AmdIntelEmuInternalReadMsrValue64 (Rax, Registers);
+  Value = AmdIntelEmuInternalReadMsrValue64 (&SaveState->RAX, Registers);
   if (Value != 0) {
     mMicrocodeUpdateSignature = BitFieldRead64 (Value, 32, 63);
   }

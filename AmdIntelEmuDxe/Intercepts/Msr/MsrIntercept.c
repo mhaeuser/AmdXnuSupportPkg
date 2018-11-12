@@ -10,62 +10,62 @@
 typedef
 VOID
 (*INTERNAL_MSR_INTERCEPT) (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalWrmsrPat (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalRdmsrMiscEnable (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalWrmsrMiscEnable (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalRdmsrPlatformId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalWrmsrPlatformId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalRdmsrBiosSignId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalWrmsrBiosSignId (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalRdmsrCoreThreadCount (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalWrmsrCoreThreadCount (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 typedef struct {
@@ -78,7 +78,7 @@ STATIC CONST INTERNAL_MSR_INTERCEPT_INFO mMsrInterceptMap[] = {
   {
     MSR_IA32_PAT,
     NULL,
-    AmdIntelEmuInternalWrmsrPat
+    (INTERNAL_MSR_INTERCEPT)AmdIntelEmuInternalWrmsrPat
   },
   {
     MSR_IA32_MISC_ENABLE,
@@ -158,8 +158,8 @@ AmdIntelEmuInternalInitMsrPm (
 
 VOID
 AmdIntelEmuInternalInterceptRdmsr (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   UINT32                            MsrIndex;
@@ -172,7 +172,7 @@ AmdIntelEmuInternalInterceptRdmsr (
     MsrIntercept = &mMsrInterceptMap[Index];
     if (MsrIntercept->MsrIndex == MsrIndex) {
       if (MsrIntercept->Read != NULL) {
-        MsrIntercept->Read (Rax, Registers);
+        MsrIntercept->Read (SaveState, Registers);
       }
 
       return;
@@ -180,7 +180,7 @@ AmdIntelEmuInternalInterceptRdmsr (
   }
 
   AmdIntelEmuInternalWriteMsrValue64 (
-    Rax,
+    &SaveState->RAX,
     Registers,
     AsmReadMsr64 (MsrIndex)
     );
@@ -188,8 +188,8 @@ AmdIntelEmuInternalInterceptRdmsr (
 
 VOID
 AmdIntelEmuInternalInterceptWrmsr (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   UINT32                            MsrIndex;
@@ -202,7 +202,7 @@ AmdIntelEmuInternalInterceptWrmsr (
     MsrIntercept = &mMsrInterceptMap[Index];
     if (MsrIntercept->MsrIndex == MsrIndex) {
       if (MsrIntercept->Write != NULL) {
-        MsrIntercept->Write (Rax, Registers);
+        MsrIntercept->Write (SaveState, Registers);
       }
 
       return;
@@ -211,7 +211,7 @@ AmdIntelEmuInternalInterceptWrmsr (
 
   AsmWriteMsr64 (
     MsrIndex,
-    AmdIntelEmuInternalReadMsrValue64 (Rax, Registers)
+    AmdIntelEmuInternalReadMsrValue64 (&SaveState->RAX, Registers)
     );
 }
 

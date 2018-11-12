@@ -9,8 +9,8 @@
 
 VOID
 AmdIntelEmuInternalRdmsrCoreThreadCount (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   MSR_HASWELL_E_CORE_THREAD_COUNT_REGISTER CoreThreadCountMsr;
@@ -19,7 +19,7 @@ AmdIntelEmuInternalRdmsrCoreThreadCount (
   UINT16                                   ThreadCount;
   UINT16                                   CoreCount;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
 
   AsmCpuid (
@@ -44,7 +44,7 @@ AmdIntelEmuInternalRdmsrCoreThreadCount (
   CoreThreadCountMsr.Bits.Core_Count   = CoreCount;
   CoreThreadCountMsr.Bits.Thread_Count = ThreadCount;
   AmdIntelEmuInternalWriteMsrValue64 (
-    Rax,
+    &SaveState->RAX,
     Registers,
     CoreThreadCountMsr.Uint64
     );
@@ -52,11 +52,11 @@ AmdIntelEmuInternalRdmsrCoreThreadCount (
 
 VOID
 AmdIntelEmuInternalWrmsrCoreThreadCount (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
   //
   // THREAD_CORE_COUNT is read-only.

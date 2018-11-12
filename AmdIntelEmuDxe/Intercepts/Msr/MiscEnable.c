@@ -9,8 +9,8 @@
 
 VOID
 AmdIntelEmuInternalRdmsrMiscEnable (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   MSR_IA32_MISC_ENABLE_REGISTER       MiscEnableMsr;
@@ -18,7 +18,7 @@ AmdIntelEmuInternalRdmsrMiscEnable (
   MSR_AMD_CPUID_EXT_FEATURES_REGISTER ExtFeaturesMsr;
   MSR_AMD_HWCR_REGISTER               HwcrMsr;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
 
   MiscEnableMsr.Uint64 = 0;
@@ -31,13 +31,17 @@ AmdIntelEmuInternalRdmsrMiscEnable (
   //
   // TODO: Implement EIST via PowerNOW!
   //
-  AmdIntelEmuInternalWriteMsrValue64 (Rax, Registers, MiscEnableMsr.Uint64);
+  AmdIntelEmuInternalWriteMsrValue64 (
+    &SaveState->RAX,
+    Registers,
+    MiscEnableMsr.Uint64
+    );
 }
 
 VOID
 AmdIntelEmuInternalWrmsrMiscEnable (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   MSR_IA32_MISC_ENABLE_REGISTER       MiscEnableMsr;
@@ -45,10 +49,13 @@ AmdIntelEmuInternalWrmsrMiscEnable (
   MSR_AMD_CPUID_EXT_FEATURES_REGISTER ExtFeaturesMsr;
   MSR_AMD_HWCR_REGISTER               HwcrMsr;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
 
-  MiscEnableMsr.Uint64 = AmdIntelEmuInternalReadMsrValue64 (Rax, Registers);
+  MiscEnableMsr.Uint64 = AmdIntelEmuInternalReadMsrValue64 (
+                           &SaveState->RAX,
+                           Registers
+                           );
 
   ExtFeaturesMsr.Uint64  = AsmReadMsr64 (MSR_AMD_CPUID_EXT_FEATURES);
   ExtFeaturesMsr.Bits.NX = MiscEnableMsr.Bits.XD;

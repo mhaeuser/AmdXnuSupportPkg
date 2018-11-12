@@ -11,13 +11,13 @@
 
 VOID
 AmdIntelEmuInternalWrmsrPat (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   MSR_IA32_PAT_REGISTER PatMsr;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
   //
   // Undocumented fix by Bronya: Force WT-by-default PAT1 and PAT5 entries into
@@ -25,7 +25,10 @@ AmdIntelEmuInternalWrmsrPat (
   // TODO: Is forcing the other PAT entries into default as done in the kenrel
   //       necessary? Why does this work? Do all WTs need to be forced into WC?
   //
-  PatMsr.Uint64   = AmdIntelEmuInternalReadMsrValue64 (Rax, Registers);
+  PatMsr.Uint64 = AmdIntelEmuInternalReadMsrValue64 (
+                    &SaveState->RAX,
+                    Registers
+                    );
   PatMsr.Bits.PA1 = PAT_WC;
   PatMsr.Bits.PA5 = PAT_WC;
   AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);

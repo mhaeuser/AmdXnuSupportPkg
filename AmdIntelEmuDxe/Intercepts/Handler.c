@@ -12,14 +12,15 @@ AmdEmuInterceptCpuid (
 
 VOID
 AmdIntelEmuInternalInterceptRdmsr (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
 AmdIntelEmuInternalInterceptWrmsr (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
+  
   );
 
 VOID
@@ -54,11 +55,11 @@ AmdInterceptionHandler (
     case VMEXIT_MSR:
     {
       if (Vmcb->EXITINFO1 == 0) {
-        AmdIntelEmuInternalInterceptRdmsr (&SaveState->RAX, Registers);
+        AmdIntelEmuInternalInterceptRdmsr (SaveState, Registers);
         RegistersModded = TRUE;
       } else {
         ASSERT (Vmcb->EXITINFO1 == 1);
-        AmdIntelEmuInternalInterceptWrmsr (&SaveState->RAX, Registers);
+        AmdIntelEmuInternalInterceptWrmsr (SaveState, Registers);
       }
 
       break;
