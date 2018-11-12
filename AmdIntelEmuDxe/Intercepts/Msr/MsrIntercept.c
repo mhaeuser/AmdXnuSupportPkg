@@ -68,6 +68,18 @@ AmdIntelEmuInternalWrmsrCoreThreadCount (
   IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
+VOID
+AmdIntelEmuInternalRdmsrX2apicVersion (
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
+  );
+
+VOID
+AmdIntelEmuInternalWrmsrX2apicVersion (
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
+  );
+
 typedef struct {
   UINT32                 MsrIndex;
   INTERNAL_MSR_INTERCEPT Read;
@@ -99,6 +111,11 @@ STATIC CONST INTERNAL_MSR_INTERCEPT_INFO mMsrInterceptMap[] = {
     MSR_HASWELL_E_CORE_THREAD_COUNT,
     AmdIntelEmuInternalRdmsrCoreThreadCount,
     AmdIntelEmuInternalWrmsrCoreThreadCount
+  },
+  {
+    MSR_IA32_X2APIC_VERSION,
+    AmdIntelEmuInternalRdmsrX2apicVersion,
+    AmdIntelEmuInternalWrmsrX2apicVersion
   }
 };
 
