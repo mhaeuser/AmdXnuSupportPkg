@@ -295,20 +295,15 @@ InternalLaunchVmEnvironment (
   // RIP and RSP are set in NASM, RAX may be 0 as it is non-volatile (EFIAPI).
   // G_PAT is not set because nested paging is not used.
   //
-  Cr0                     = AsmReadCr0 ();
-  SaveState->EFER         = EferMsr.Uint64;
-  SaveState->CR4          = AsmReadCr4 ();
-  SaveState->CR3          = AsmReadCr3 ();
-  SaveState->G_PAT        = AsmReadMsr64 (MSR_IA32_PAT);
-  SaveState->CR0          = Cr0;
-  SaveState->DR7          = AsmReadDr7 ();
-  SaveState->DR6          = AsmReadDr6 ();
-  SaveState->CR2          = AsmReadCr2 ();
-  SaveState->DBGCTL       = AsmReadMsr64 (MSR_IA32_DEBUGCTL);
-  SaveState->BR_FROM      = AsmReadMsr64 (BR_FROM_MSR);
-  SaveState->BR_TO        = AsmReadMsr64 (BR_TO_MSR);
-  SaveState->LASTEXCPFROM = AsmReadMsr64 (LASTEXCP_FROM_IP_MSR);
-  SaveState->LASTEXCPTO   = AsmReadMsr64 (LASTEXCP_TO_IP_MSR);
+  Cr0              = AsmReadCr0 ();
+  SaveState->EFER  = EferMsr.Uint64;
+  SaveState->CR4   = AsmReadCr4 ();
+  SaveState->CR3   = AsmReadCr3 ();
+  SaveState->G_PAT = AsmReadMsr64 (MSR_IA32_PAT);
+  SaveState->CR0   = Cr0;
+  SaveState->DR7   = AsmReadDr7 ();
+  SaveState->DR6   = AsmReadDr6 ();
+  SaveState->CR2   = AsmReadCr2 ();
   //
   // Disable debugging for the host.
   // The registers will be restored by entering the VM below.
