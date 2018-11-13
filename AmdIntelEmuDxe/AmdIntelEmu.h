@@ -423,6 +423,12 @@ AmdEnableVm (
   IN     VOID  *HostStack
   );
 
+UINTN
+EFIAPI
+AmdIntelEmuInternalDisableTf (
+  VOID
+  );
+
 VOID
 AmdIntelEmuInternalInitMsrPm (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb

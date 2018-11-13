@@ -303,13 +303,19 @@ InternalLaunchVmEnvironment (
   SaveState->CR0          = Cr0;
   SaveState->DR7          = AsmReadDr7 ();
   SaveState->DR6          = AsmReadDr6 ();
-  SaveState->RFLAGS       = AsmReadEflags ();
   SaveState->CR2          = AsmReadCr2 ();
   SaveState->DBGCTL       = AsmReadMsr64 (DBG_CTL_MSR);
   SaveState->BR_FROM      = AsmReadMsr64 (BR_FROM_MSR);
   SaveState->BR_TO        = AsmReadMsr64 (BR_TO_MSR);
   SaveState->LASTEXCPFROM = AsmReadMsr64 (LASTEXCP_FROM_IP_MSR);
   SaveState->LASTEXCPTO   = AsmReadMsr64 (LASTEXCP_TO_IP_MSR);
+  //
+  // Disable debugging for the host.
+  // The registers will be restored by entering the VM below.
+  //
+  SaveState->RFLAGS = AmdIntelEmuInternalDisableTf ();
+  AsmWriteDr6 (0);
+  AsmWriteDr7 (0);
   //
   // Enable caching on the host, this means the guest has control of the CD
   // setting.  This will be rolled back due to the guest context switch when
