@@ -304,7 +304,7 @@ InternalLaunchVmEnvironment (
   SaveState->DR7          = AsmReadDr7 ();
   SaveState->DR6          = AsmReadDr6 ();
   SaveState->CR2          = AsmReadCr2 ();
-  SaveState->DBGCTL       = AsmReadMsr64 (DBG_CTL_MSR);
+  SaveState->DBGCTL       = AsmReadMsr64 (MSR_IA32_DEBUGCTL);
   SaveState->BR_FROM      = AsmReadMsr64 (BR_FROM_MSR);
   SaveState->BR_TO        = AsmReadMsr64 (BR_TO_MSR);
   SaveState->LASTEXCPFROM = AsmReadMsr64 (LASTEXCP_FROM_IP_MSR);

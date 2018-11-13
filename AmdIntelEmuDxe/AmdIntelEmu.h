@@ -10,7 +10,6 @@
 //
 #define CPUID_EXTENDED_CPU_SIG  0x80000001U
 
-#define DBG_CTL_MSR           0x000001D9U
 #define BR_FROM_MSR           0x000001DBU
 #define BR_TO_MSR             0x000001DCU
 #define LASTEXCP_FROM_IP_MSR  0x000001DDU
