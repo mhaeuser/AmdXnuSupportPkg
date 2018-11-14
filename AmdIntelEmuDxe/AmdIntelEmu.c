@@ -82,8 +82,7 @@ InternalSegmentGetBase (
 
   ASSERT (Segment != NULL);
 
-  Base  = 0;
-  Base |= Segment->Bits.BaseLow;
+  Base  = Segment->Bits.BaseLow;
   Base |= (Segment->Bits.BaseMid  << 16U);
   Base |= (Segment->Bits.BaseHigh << 24U);
 
@@ -96,15 +95,8 @@ InternalSegmentGetLimit (
   IN CONST IA32_SEGMENT_DESCRIPTOR  *Segment
   )
 {
-  UINT32 Limit;
-
   ASSERT (Segment != NULL);
-
-  Limit  = 0;
-  Limit |= Segment->Bits.LimitLow;
-  Limit |= (Segment->Bits.LimitHigh << 16U);
-
-  return Limit;
+  return (Segment->Bits.LimitLow | (Segment->Bits.LimitHigh << 16U));
 }
 
 STATIC
@@ -204,15 +196,15 @@ InternalLaunchVmEnvironment (
   IN       VOID                   *HostStack
   )
 {
-  AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState;
-  MSR_VM_CR_REGISTER               VmCrMsr;
-  MSR_AMD_EFER_REGISTER            EferMsr;
-  IA32_DESCRIPTOR                  Gdtr;
-  CONST IA32_SEGMENT_DESCRIPTOR    *LdtrDesc;
-  IA32_DESCRIPTOR                  Ldtr;
-  IA32_DESCRIPTOR                  Idtr;
-  UINTN                            Cr0;
-  MSR_IA32_PAT_REGISTER            PatMsr;
+  AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  MSR_VM_CR_REGISTER              VmCrMsr;
+  MSR_AMD_EFER_REGISTER           EferMsr;
+  IA32_DESCRIPTOR                 Gdtr;
+  CONST IA32_SEGMENT_DESCRIPTOR   *LdtrDesc;
+  IA32_DESCRIPTOR                 Ldtr;
+  IA32_DESCRIPTOR                 Idtr;
+  UINTN                           Cr0;
+  MSR_IA32_PAT_REGISTER           PatMsr;
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(
                 (UINTN)GuestVmcb->VmcbSaveState
@@ -431,19 +423,19 @@ AmdEmuVirtualizeSystem (
   //
 
   MsrPm = GET_PAGE (VOID, Context, 0);
-  IoPm  = GET_PAGE (VOID, MsrPm, 1);
+  IoPm  = GET_PAGE (VOID, MsrPm,   1);
   //
   // Place the stack before the VMCBs and after the Protection Maps, so if it
   // shall overflow, it does not corrupt any critical VM information.
   // The PMs' high memory is reserved.
   //
   HostStacks = GET_PAGE (VOID, IoPm,       3);
-  HostVmcbs  = GET_PAGE (VOID, HostStacks, (1 * Context->NumEnabledProcessors));
-  GuestVmcbs = GET_PAGE (VOID, HostVmcbs,  (1 * Context->NumEnabledProcessors));
+  HostVmcbs  = GET_PAGE (VOID, HostStacks, Context->NumEnabledProcessors);
+  GuestVmcbs = GET_PAGE (VOID, HostVmcbs,  Context->NumEnabledProcessors);
   //
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
-  ZeroMem (MsrPm, (4 * SIZE_4KB));
+  ZeroMem (MsrPm,      (4 * SIZE_4KB));
   ZeroMem (GuestVmcbs, (Context->NumEnabledProcessors * SIZE_4KB));
   //
   // Set up the generic VMCB used on all cores.
@@ -504,8 +496,16 @@ AmdEmuVirtualizeSystem (
       }
       );
 
-    Context->Thread.GuestVmcb = GET_PAGE (AMD_VMCB_CONTROL_AREA, GuestVmcbs, NumFinished);
-    Context->Thread.HostVmcb  = GET_PAGE (AMD_VMCB_CONTROL_AREA, HostVmcbs, NumFinished);
+    Context->Thread.GuestVmcb = GET_PAGE (
+                                  AMD_VMCB_CONTROL_AREA,
+                                  GuestVmcbs,
+                                  NumFinished
+                                  );
+    Context->Thread.HostVmcb = GET_PAGE (
+                                 AMD_VMCB_CONTROL_AREA,
+                                 HostVmcbs,
+                                 NumFinished
+                                 );
     Context->Thread.HostStack = GET_PAGE (VOID, HostStacks, NumFinished);
     Status = MpServices->StartupThisAP (
                            MpServices,
