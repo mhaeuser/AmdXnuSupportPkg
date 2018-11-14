@@ -117,15 +117,15 @@ InternalSegmentGetAttributes (
 
   ASSERT (Segment != NULL);
 
-  Attributes.Bits.Type     = Segment->Bits.Type;
-  Attributes.Bits.S        = Segment->Bits.S;
-  Attributes.Bits.DPL      = Segment->Bits.DPL;
-  Attributes.Bits.P        = Segment->Bits.P;
-  Attributes.Bits.AVL      = Segment->Bits.AVL;
-  Attributes.Bits.L        = Segment->Bits.L;
-  Attributes.Bits.DB       = Segment->Bits.DB;
-  Attributes.Bits.G        = Segment->Bits.G;
-  Attributes.Bits.Reserved = 0;
+  Attributes.Uint16    = 0;
+  Attributes.Bits.Type = Segment->Bits.Type;
+  Attributes.Bits.S    = Segment->Bits.S;
+  Attributes.Bits.DPL  = Segment->Bits.DPL;
+  Attributes.Bits.P    = Segment->Bits.P;
+  Attributes.Bits.AVL  = Segment->Bits.AVL;
+  Attributes.Bits.L    = Segment->Bits.L;
+  Attributes.Bits.DB   = Segment->Bits.DB;
+  Attributes.Bits.G    = Segment->Bits.G;
 
   return Attributes.Uint16;
 }
