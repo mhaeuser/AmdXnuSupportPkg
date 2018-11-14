@@ -3,6 +3,9 @@
 
 #define CR0_CD  BIT30
 
+#define PAT_WC  0x01U
+#define PAT_WB  0x06U
+
 #pragma pack (1)
 
 //

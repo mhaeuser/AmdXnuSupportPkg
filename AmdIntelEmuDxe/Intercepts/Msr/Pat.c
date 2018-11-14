@@ -7,8 +7,6 @@
 
 #include "../../AmdIntelEmu.h"
 
-#define PAT_WC  0x01U
-
 VOID
 AmdIntelEmuInternalWrmsrPat (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
@@ -31,7 +29,8 @@ AmdIntelEmuInternalWrmsrPat (
                     );
   PatMsr.Bits.PA1 = PAT_WC;
   PatMsr.Bits.PA5 = PAT_WC;
-  AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);
+  // TODO: Write MSR for when Nested Paging is off.
+  //AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);
   //
   // Inform the Guest of the new PAT for when Nested Paging is used.
   //

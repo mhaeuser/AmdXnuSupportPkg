@@ -212,6 +212,7 @@ InternalLaunchVmEnvironment (
   IA32_DESCRIPTOR                  Ldtr;
   IA32_DESCRIPTOR                  Idtr;
   UINTN                            Cr0;
+  MSR_IA32_PAT_REGISTER            PatMsr;
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(
                 (UINTN)GuestVmcb->VmcbSaveState
@@ -319,6 +320,20 @@ InternalLaunchVmEnvironment (
   if ((Cr0 & CR0_CD) != 0) {
     AsmWriteCr0 (Cr0 & ~(UINTN)CR0_CD);
   }
+  //
+  // Set all host PAT Types to WB as this type ensures the best compatibility
+  // across all Guest PAT Types when combining as per 24593, Table 15-19.
+  //
+  PatMsr.Uint64   = 0;
+  PatMsr.Bits.PA0 = PAT_WB;
+  PatMsr.Bits.PA1 = PAT_WB;
+  PatMsr.Bits.PA2 = PAT_WB;
+  PatMsr.Bits.PA3 = PAT_WB;
+  PatMsr.Bits.PA4 = PAT_WB;
+  PatMsr.Bits.PA5 = PAT_WB;
+  PatMsr.Bits.PA6 = PAT_WB;
+  PatMsr.Bits.PA7 = PAT_WB;
+  AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);
   //
   // Virtualize the current execution environment.  This call will return here.
   //
