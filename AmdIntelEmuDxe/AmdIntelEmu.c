@@ -39,8 +39,9 @@ InternalIsSvmAvailable (
 	VOID
   )
 {
-  CPUID_AMD_EXTENDED_CPU_SIG_ECX ExtendedCpuSigEcx;
-  MSR_VM_CR_REGISTER             VmCrRegister;
+  CPUID_AMD_EXTENDED_CPU_SIG_ECX           ExtendedCpuSigEcx;
+  CPUID_AMD_SVM_FEATURE_IDENTIFICATION_EDX SvmFeatureIdEdx;
+  MSR_VM_CR_REGISTER                       VmCrRegister;
   
   AsmCpuid (
     CPUID_EXTENDED_CPU_SIG,
@@ -57,7 +58,17 @@ InternalIsSvmAvailable (
   //
   VmCrRegister.Uint64 = AsmReadMsr64 (MSR_VM_CR);
   if (VmCrRegister.Bits.SVMDIS != 0) {
-    if (VmCrRegister.Bits.LOCK == 0) {
+    AsmCpuid (
+      CPUID_AMD_SVM_FEATURE_IDENTIFICATION,
+      NULL,
+      NULL,
+      NULL,
+      &SvmFeatureIdEdx.Uint32
+      );
+    //
+    // SVMDIS is read-only when locking is unsupported.
+    //
+    if ((SvmFeatureIdEdx.Bits.SVML != 0) && (VmCrRegister.Bits.LOCK == 0)) {
       VmCrRegister.Bits.SVMDIS = 0;
       AsmWriteMsr64 (MSR_VM_CR, VmCrRegister.Uint64);
       DEBUG_CODE (

@@ -179,6 +179,27 @@ typedef union {
   UINT32 Uint32;
 } CPUID_AMD_APIC_ID_SIZE_CORE_COUNT_ECX;
 
+#define CPUID_AMD_SVM_FEATURE_IDENTIFICATION  0x8000000AU
+
+typedef union {
+  PACKED struct {
+    UINT32 NP                   : 1;
+    UINT32 LbrVirt              : 1;
+    UINT32 SVML                 : 1;
+    UINT32 NRIPS                : 1;
+    UINT32 TscRateMsr           : 1;
+    UINT32 VmcbClean            : 1;
+    UINT32 FlushByAsid          : 1;
+    UINT32 DecodeAssists        : 1;
+    UINT32 Reserved1            : 2;
+    UINT32 PauseFilter          : 1;
+    UINT32 Reserved2            : 1;
+    UINT32 PauseFilterThreshold : 1;
+    UINT32 Reserved3            : 9;
+  }      Bits;
+  UINT32 Uint32;
+} CPUID_AMD_SVM_FEATURE_IDENTIFICATION_EDX;
+
 #define CPUID_AMD_COMPUTE_UNIT_IDENTIFIERS  0x8000001EU
 
 typedef union {
