@@ -30,8 +30,6 @@ AmdInterceptionHandler (
   IN OUT AMD_EMU_REGISTERS      *Registers
   )
 {
-  UINT32                          VmcbCleanBits;
-  BOOLEAN                         RegistersModded;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   //
   // For forward compatibility, if the hypervisor has not modified the VMCB,
@@ -39,8 +37,7 @@ AmdInterceptionHandler (
   // that it has not changed any VMCB contents other than the fields described
   // below as explicitly uncached.
   //
-  VmcbCleanBits   = MAX_UINT32;
-  RegistersModded = FALSE;
+  Vmcb->VmcbCleanBits.Uint32 = MAX_UINT32;
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
 
@@ -48,7 +45,6 @@ AmdInterceptionHandler (
     case VMEXIT_CPUID:
     {
       AmdEmuInterceptCpuid (&SaveState->RAX, Registers);
-      RegistersModded = TRUE;
       break;
     }
 
@@ -56,7 +52,6 @@ AmdInterceptionHandler (
     {
       if (Vmcb->EXITINFO1 == 0) {
         AmdIntelEmuInternalInterceptRdmsr (SaveState, Registers);
-        RegistersModded = TRUE;
       } else {
         ASSERT (Vmcb->EXITINFO1 == 1);
         AmdIntelEmuInternalInterceptWrmsr (SaveState, Registers);
@@ -71,14 +66,4 @@ AmdInterceptionHandler (
       break;
     }
   }
-
-  if (RegistersModded) {
-    //
-    // Clear all fields not known to not involve the registers referenced to by
-    // Registers as of 24594 - Rev 3.30.
-    //
-    VmcbCleanBits &= ~(UINT32)0xFFFFF000U;
-  }
-
-  Vmcb->VmcbCleanBits = VmcbCleanBits;
 }

@@ -234,6 +234,25 @@ enum {
 
 #define AMD_VMCB_EXCEPTION_UD  BIT6
 
+typedef union {
+  PACKED struct {
+    UINT32 I        : 1;
+    UINT32 IOPM     : 1;
+    UINT32 ASID     : 1;
+    UINT32 TPR      : 1;
+    UINT32 NP       : 1;
+    UINT32 CRx      : 1;
+    UINT32 DRx      : 1;
+    UINT32 DT       : 1;
+    UINT32 SEG      : 1;
+    UINT32 CR2      : 1;
+    UINT32 LBR      : 1;
+    UINT32 AVIC     : 1;
+    UINT32 Reserved : 20;
+  }      Bits;
+  UINT32 Uint32;
+} AMD_VMCB_CLEAN_FIELD;
+
 typedef PACKED struct {
   UINT16 InterceptReadCr;
   UINT16 InterceptWriteCr;
@@ -346,7 +365,7 @@ typedef PACKED struct {
   UINT32 Reserved12                 : 30;
   UINT32 Reserved13                 : 32;
 
-  UINT32 VmcbCleanBits;
+  AMD_VMCB_CLEAN_FIELD VmcbCleanBits;
   UINT32 Reserved14;
 
   UINT64 nRIP;
