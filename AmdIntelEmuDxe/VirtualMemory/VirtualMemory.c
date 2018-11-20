@@ -191,12 +191,12 @@ Split2MPageTo4K (
     // Fill in the Page Table entries
     //
     PageTableEntry->Uint64 = (UINT64)PhysicalAddress4K;
+    PageTableEntry->Bits.UserSupervisor = 1;
+    PageTableEntry->Bits.ReadWrite = 1;
     //
     // Page is not present by default.
     //
     if (!SplitUnmapPage (Context, PhysicalAddress4K, SIZE_4KB)) {
-      PageTableEntry->Bits.UserSupervisor = 1;
-      PageTableEntry->Bits.ReadWrite = 1;
       PageTableEntry->Bits.Present = 1;
     }
   }
