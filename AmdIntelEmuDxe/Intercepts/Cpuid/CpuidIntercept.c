@@ -49,8 +49,8 @@ AmdEmuInterceptCpuidVmm (
 
 VOID
 AmdEmuInterceptCpuid (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   )
 {
   UINT32 CpuidIndex;
@@ -60,10 +60,14 @@ AmdEmuInterceptCpuid (
   UINT32 Ecx;
   UINT32 Edx;
 
-  ASSERT (Rax != NULL);
+  ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
+  //
+  // The cpuid opcode is two bytes long.
+  //
+  SaveState->RIP += 2;
 
-  CpuidIndex = BitFieldRead32 (*Rax, 0, 31);
+  CpuidIndex = BitFieldRead32 (SaveState->RAX, 0, 31);
 
   Ecx = (UINT32)Registers->Rcx;
 
@@ -104,8 +108,8 @@ AmdEmuInterceptCpuid (
     }
   }
 
-  *Rax           = BitFieldWrite32 (*Rax,           0, 31, Eax);
+  SaveState->RAX = BitFieldWrite32 (SaveState->RAX, 0, 31, Eax);
   Registers->Rbx = BitFieldWrite32 (Registers->Rbx, 0, 31, Ebx);
   Registers->Rcx = BitFieldWrite32 (Registers->Rcx, 0, 31, Ecx);
-  Registers->Rdx = BitFieldWrite32 (Registers->Rdx, 0, 31, Edx);
+  Registers->Rdx = BitFieldWrite32 (Registers->Rdx, 0, 31, Edx)
 }

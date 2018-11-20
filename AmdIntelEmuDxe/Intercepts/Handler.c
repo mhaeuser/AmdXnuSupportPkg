@@ -6,8 +6,8 @@
 
 VOID
 AmdEmuInterceptCpuid (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_EMU_REGISTERS                *Registers
   );
 
 VOID
@@ -20,7 +20,6 @@ VOID
 AmdIntelEmuInternalInterceptWrmsr (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
   IN OUT AMD_EMU_REGISTERS                *Registers
-  
   );
 
 VOID
@@ -44,7 +43,7 @@ AmdInterceptionHandler (
   switch (Vmcb->EXITCODE) {
     case VMEXIT_CPUID:
     {
-      AmdEmuInterceptCpuid (&SaveState->RAX, Registers);
+      AmdEmuInterceptCpuid (SaveState, Registers);
       break;
     }
 
