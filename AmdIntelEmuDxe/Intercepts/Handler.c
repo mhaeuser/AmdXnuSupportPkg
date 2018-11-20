@@ -59,6 +59,12 @@ AmdInterceptionHandler (
       break;
     }
 
+    case VMEXIT_VMRUN:
+    {
+      // TODO: Inject #UD for vmrun execution within the guest.
+      break;
+    }
+
     default:
     {
       ASSERT (FALSE);

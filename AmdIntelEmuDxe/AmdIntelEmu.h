@@ -229,7 +229,8 @@ typedef union {
 enum {
   VMEXIT_EXCP_UD = 0x46,
   VMEXIT_CPUID   = 0x72,
-  VMEXIT_MSR     = 0x7C
+  VMEXIT_MSR     = 0x7C,
+  VMEXIT_VMRUN   = 0x80
 };
 
 #define AMD_VMCB_EXCEPTION_UD  BIT6
