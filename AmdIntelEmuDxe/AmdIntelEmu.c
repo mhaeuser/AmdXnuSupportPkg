@@ -309,11 +309,6 @@ InternalLaunchVmEnvironment (
   SaveState->DR6   = AsmReadDr6 ();
   SaveState->CR2   = AsmReadCr2 ();
   //
-  // Disable debugging for the host.
-  // The registers will be restored by entering the VM below.
-  //
-  SaveState->RFLAGS = AmdIntelEmuInternalDisableTf ();
-  //
   // Enable caching on the host, this means the guest has control of the CD
   // setting.  This will be rolled back due to the guest context switch when
   // returning from AmdEnableVm() if caching has been disabled before.
@@ -335,6 +330,11 @@ InternalLaunchVmEnvironment (
   PatMsr.Bits.PA6 = PAT_WB;
   PatMsr.Bits.PA7 = PAT_WB;
   AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);
+  //
+  // Disable single-stepping for the host.
+  // The registers will be restored by entering the VM below.
+  //
+  SaveState->RFLAGS = AmdIntelEmuInternalDisableTf ();
   //
   // Virtualize the current execution environment.  This call will return here.
   //
