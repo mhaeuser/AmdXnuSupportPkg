@@ -30,6 +30,8 @@ AmdInterceptionHandler (
   )
 {
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  
+  Vmcb->EVENTINJ.Uint64 = 0;
   //
   // For forward compatibility, if the hypervisor has not modified the VMCB,
   // the hypervisor may write FFFF_FFFFh to the VMCB Clean Field to indicate
@@ -70,5 +72,9 @@ AmdInterceptionHandler (
       ASSERT (FALSE);
       break;
     }
+  }
+
+  if (Vmcb->EXITINTINFO.Bits.V != 0) {
+    Vmcb->EVENTINJ = Vmcb->EXITINTINFO;
   }
 }

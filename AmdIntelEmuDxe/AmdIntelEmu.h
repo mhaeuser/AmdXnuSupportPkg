@@ -254,6 +254,39 @@ typedef union {
   UINT32 Uint32;
 } AMD_VMCB_CLEAN_FIELD;
 
+typedef enum {
+  AmdVmcbIntr              = 0,
+  AmdVmcbNMI               = 2,
+  AmdVmcbException         = 3,
+  AmdVmcbSoftwareInterrupt = 4
+} AMD_VMCB_EVENTINJ_TYPE;
+
+typedef union {
+  PACKED struct {
+    UINT32 VECTOR    : 8;
+    UINT32 TYPE      : 3;
+    UINT32 EV        : 2;
+    UINT32 Reserved  : 19;
+    UINT32 V         : 1;
+    UINT32 ERRORCODE : 32;
+  }      Bits;
+  UINT64 Uint64;
+} AMD_VMCB_EVENT;
+
+typedef union {
+  PACKED struct {
+    UINT32 P                 : 1;
+    UINT32 RW                : 1;
+    UINT32 US                : 1;
+    UINT32 RSV               : 1;
+    UINT32 ID                : 1;
+    UINT32 Reserved          : 25;
+    UINT32 FaultFinalAddress : 1;
+    UINT32 FaultGuestTlb     : 1;
+  }      Bits;
+  UINT32 Uint32;
+} AMD_VMCB_EXITINFO1_NPF;
+
 typedef PACKED struct {
   UINT16 InterceptReadCr;
   UINT16 InterceptWriteCr;
@@ -348,7 +381,7 @@ typedef PACKED struct {
   UINT64 EXITCODE;
   UINT64 EXITINFO1;
   UINT64 EXITINFO2;
-  UINT64 EXITINTINFO;
+  AMD_VMCB_EVENT EXITINTINFO;
 
   UINT32 NP_ENABLE                  : 1;
   UINT32 EnableSev                  : 1;
@@ -358,7 +391,7 @@ typedef PACKED struct {
 
   UINT64 AVIC_APIC_BASE; // The upper 12 bits must be 0.
   UINT64 Ghcb;
-  UINT64 EVENTINJ;
+  AMD_VMCB_EVENT EVENTINJ;
   UINT64 N_CR3;
 
   UINT32 LBR_VIRTUALIZATION_ENABLE  : 1;
