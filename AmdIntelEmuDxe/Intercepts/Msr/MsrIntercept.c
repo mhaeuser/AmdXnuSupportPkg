@@ -90,7 +90,7 @@ STATIC CONST INTERNAL_MSR_INTERCEPT_INFO mMsrInterceptMap[] = {
   {
     MSR_IA32_PAT,
     NULL,
-    (INTERNAL_MSR_INTERCEPT)AmdIntelEmuInternalWrmsrPat
+    AmdIntelEmuInternalWrmsrPat
   },
   {
     MSR_IA32_MISC_ENABLE,
