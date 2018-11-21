@@ -313,8 +313,6 @@ InternalLaunchVmEnvironment (
   // The registers will be restored by entering the VM below.
   //
   SaveState->RFLAGS = AmdIntelEmuInternalDisableTf ();
-  AsmWriteDr6 (0);
-  AsmWriteDr7 (0);
   //
   // Enable caching on the host, this means the guest has control of the CD
   // setting.  This will be rolled back due to the guest context switch when
