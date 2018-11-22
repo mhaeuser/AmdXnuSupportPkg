@@ -1,6 +1,8 @@
 #ifndef AMD_INTEL_EMU_H_
 #define AMD_INTEL_EMU_H_
 
+#include "VirtualMemory/VirtualMemory.h"
+
 #define CR0_CD  BIT30
 
 #define PAT_WC  0x01U

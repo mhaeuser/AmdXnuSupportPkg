@@ -16,12 +16,12 @@
 #define AMD_EMU_STACK_PAGES  1U
 
 #define GET_PAGE(TYPE, Address, Index)  \
-  ((TYPE *)((UINTN)(Address) + (Index * SIZE_4KB)))
+  ((TYPE *)((UINTN)(Address) + ((Index) * SIZE_4KB)))
 
 typedef struct {
-  AMD_VMCB_CONTROL_AREA  *GuestVmcb;
-  AMD_VMCB_CONTROL_AREA  *HostVmcb;
-  VOID                   *HostStack;
+  AMD_VMCB_CONTROL_AREA *GuestVmcb;
+  AMD_VMCB_CONTROL_AREA *HostVmcb;
+  VOID                  *HostStack;
 } AMD_EMU_THREAD_PRIVATE;
 
 typedef struct {
