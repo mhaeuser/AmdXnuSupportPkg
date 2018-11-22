@@ -537,9 +537,9 @@ AmdIntelEmuInternalWriteMsrValue64 (
 typedef
 BOOLEAN
 (*AMD_INTEL_EMU_UNMAP_SPLIT_PAGE) (
-  IN CONST VOID            *Context,
-  IN EFI_PHYSICAL_ADDRESS  Address,
-  IN UINTN                 Size
+  IN CONST VOID        *Context,
+  IN PHYSICAL_ADDRESS  Address,
+  IN UINTN             Size
   );
 
 /**
@@ -556,7 +556,6 @@ UINTN
 CreateIdentityMappingPageTables (
   IN CONST VOID                      *Context,
   IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE  SplitUnmapPage
-  
   );
 
 #endif // AMD_INTEL_EMU_H_
