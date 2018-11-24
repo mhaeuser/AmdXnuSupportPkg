@@ -34,7 +34,31 @@ typedef struct {
   BOOLEAN                  NpSupport;
 } AMD_EMU_PRIVATE;
 
+STATIC AMD_INTEL_EMU_THREAD_CONTEXT *mInternalThreadContexts   = NULL;
+STATIC UINTN                        mInternalNumThreadContexts = 0;
+
 GLOBAL_REMOVE_IF_UNREFERENCED BOOLEAN mAmdIntelEmuInternalNrip = FALSE;
+
+AMD_INTEL_EMU_THREAD_CONTEXT *
+AmdIntelEmuInternalGetThreadContext (
+  IN CONST AMD_VMCB_CONTROL_AREA  *Vmcb
+  )
+{
+  UINTN                        Index;
+  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
+
+  ASSERT (Vmcb != NULL);
+
+  for (
+    ThreadContext = mInternalThreadContexts, Index = 0;
+    ThreadContext->Vmcb != Vmcb;
+    ++ThreadContext, ++Index
+    ) {
+    ASSERT (Index < mInternalNumThreadContexts);
+  }
+
+  return ThreadContext;
+}
 
 STATIC
 BOOLEAN
@@ -418,20 +442,21 @@ AmdEmuVirtualizeSystem (
   IN OUT VOID  *Memory
   )
 {
-  AMD_EMU_PRIVATE           Private;
-  AMD_EMU_THREAD_PRIVATE    ThreadPrivate;
-  VOID                      *IoPm;
-  VOID                      *MsrPm;
-  VOID                      *HostStacks;
-  VOID                      *HostVmcbs;
-  VOID                      *GuestVmcbs;
-  AMD_VMCB_CONTROL_AREA     *GuestVmcb;
-  AMD_VMCB_CONTROL_AREA     *VmcbWalker;
-  EFI_STATUS                Status;
-  UINTN                     Index;
-  UINTN                     NumFinished;
-  EFI_PROCESSOR_INFORMATION ProcessorInfo;
-  UINTN                     BspOffset;
+  AMD_EMU_PRIVATE              Private;
+  AMD_EMU_THREAD_PRIVATE       ThreadPrivate;
+  VOID                         *IoPm;
+  VOID                         *MsrPm;
+  VOID                         *HostStacks;
+  VOID                         *HostVmcbs;
+  VOID                         *GuestVmcbs;
+  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContexts;
+  AMD_VMCB_CONTROL_AREA        *GuestVmcb;
+  AMD_VMCB_CONTROL_AREA        *VmcbWalker;
+  EFI_STATUS                   Status;
+  UINTN                        Index;
+  UINTN                        NumFinished;
+  EFI_PROCESSOR_INFORMATION    ProcessorInfo;
+  UINTN                        BspOffset;
 
   CopyMem (&Private, Memory, sizeof (Private));
 
@@ -451,9 +476,13 @@ AmdEmuVirtualizeSystem (
   // shall overflow, it does not corrupt any critical VM information.
   // The PMs' high memory is reserved.
   //
-  HostStacks = GET_PAGE (VOID, IoPm,       3);
-  HostVmcbs  = GET_PAGE (VOID, HostStacks, Private.NumEnabledProcessors);
-  GuestVmcbs = GET_PAGE (VOID, HostVmcbs,  Private.NumEnabledProcessors);
+  HostStacks     = GET_PAGE (VOID, IoPm,       3);
+  HostVmcbs      = GET_PAGE (VOID, HostStacks, Private.NumEnabledProcessors);
+  GuestVmcbs     = GET_PAGE (VOID, HostVmcbs,  Private.NumEnabledProcessors);
+  ThreadContexts = GET_PAGE (VOID, GuestVmcbs, Private.NumEnabledProcessors);
+
+  mInternalThreadContexts    = ThreadContexts;
+  mInternalNumThreadContexts = Private.NumEnabledProcessors;
   //
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
@@ -495,6 +524,13 @@ AmdEmuVirtualizeSystem (
   NumFinished = 0;
   BspOffset   = 0;
   for (Index = 0; Index < Private.NumProcessors; ++Index) {
+    GuestVmcb = GET_PAGE (
+                  AMD_VMCB_CONTROL_AREA,
+                  GuestVmcbs,
+                  NumFinished
+                  );
+    ThreadContexts[Index].Vmcb = GuestVmcb;
+
     if (Index == Private.BspNum) {
       BspOffset = NumFinished;
       ++NumFinished;
@@ -522,16 +558,12 @@ AmdEmuVirtualizeSystem (
     // Pages are identity-mapped across all cores and the APs are only going to
     // read data, hence using stack memory is safe.
     //
-    ThreadPrivate.GuestVmcb = GET_PAGE (
+    ThreadPrivate.GuestVmcb = GuestVmcb;
+    ThreadPrivate.HostVmcb  = GET_PAGE (
                                 AMD_VMCB_CONTROL_AREA,
-                                GuestVmcbs,
+                                HostVmcbs,
                                 NumFinished
                                 );
-    ThreadPrivate.HostVmcb = GET_PAGE (
-                               AMD_VMCB_CONTROL_AREA,
-                               HostVmcbs,
-                               NumFinished
-                               );
     ThreadPrivate.HostStack = GET_PAGE (VOID, HostStacks, NumFinished);
     Status = Private.MpServices->StartupThisAP (
                                    Private.MpServices,
@@ -643,8 +675,11 @@ AmdEmuEntryPoint (
   // Allocate at a 2 MB boundary so they will be covered by a single 2 MB Page
   // Table entry.
   //
-  NumPages = (3 + 1 + (NumEnabledProcessors * (AMD_EMU_STACK_PAGES + 2)));
-  Memory   = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
+  NumPages  = (3 + 1 + (NumEnabledProcessors * (AMD_EMU_STACK_PAGES + 2)));
+  NumPages += EFI_SIZE_TO_PAGES (
+                NumEnabledProcessors * sizeof (AMD_INTEL_EMU_THREAD_CONTEXT)
+                );
+  Memory = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
   if (Memory == NULL) {
     return FALSE;
   }
