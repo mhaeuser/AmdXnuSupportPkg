@@ -1,5 +1,6 @@
 #include <Base.h>
 
+#include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 
 #include "../AmdIntelEmu.h"

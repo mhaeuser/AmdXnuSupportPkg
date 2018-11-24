@@ -25,12 +25,12 @@ typedef struct {
 } AMD_EMU_THREAD_PRIVATE;
 
 typedef struct {
+  UINTN                    Address;
   UINTN                    Size;
   EFI_MP_SERVICES_PROTOCOL *MpServices;
   UINTN                    NumProcessors;
   UINTN                    NumEnabledProcessors;
   UINTN                    BspNum;
-  AMD_EMU_THREAD_PRIVATE   Thread;
 } AMD_EMU_PRIVATE;
 
 STATIC
@@ -376,7 +376,7 @@ InternalSplitAndUnmapPage (
   ASSERT (Size > 0);
 
   Private = (AMD_EMU_PRIVATE *)Context;
-  Start   = (UINTN)Private;
+  Start   = Private->Address;
   End     = (Start + Private->Size);
 
   if (Private->Size > Size) {
@@ -405,9 +405,11 @@ InternalSplitAndUnmapPage (
 STATIC
 VOID
 AmdEmuVirtualizeSystem (
-  IN OUT AMD_EMU_PRIVATE  *Context
+  IN OUT VOID  *Memory
   )
 {
+  AMD_EMU_PRIVATE           Private;
+  AMD_EMU_THREAD_PRIVATE    ThreadPrivate;
   VOID                      *IoPm;
   VOID                      *MsrPm;
   VOID                      *HostStacks;
@@ -416,11 +418,12 @@ AmdEmuVirtualizeSystem (
   AMD_VMCB_CONTROL_AREA     *GuestVmcb;
   AMD_VMCB_CONTROL_AREA     *VmcbWalker;
   EFI_STATUS                Status;
-  EFI_MP_SERVICES_PROTOCOL  *MpServices;
   UINTN                     Index;
   UINTN                     NumFinished;
   EFI_PROCESSOR_INFORMATION ProcessorInfo;
   UINTN                     BspOffset;
+
+  CopyMem (&Private, Memory, sizeof (Private));
 
   //
   // VMRUN is available only at CPL-0.
@@ -431,7 +434,7 @@ AmdEmuVirtualizeSystem (
   //   protected.
   //
 
-  MsrPm = GET_PAGE (VOID, Context, 0);
+  MsrPm = GET_PAGE (VOID, Memory, 0);
   IoPm  = GET_PAGE (VOID, MsrPm,   1);
   //
   // Place the stack before the VMCBs and after the Protection Maps, so if it
@@ -439,13 +442,13 @@ AmdEmuVirtualizeSystem (
   // The PMs' high memory is reserved.
   //
   HostStacks = GET_PAGE (VOID, IoPm,       3);
-  HostVmcbs  = GET_PAGE (VOID, HostStacks, Context->NumEnabledProcessors);
-  GuestVmcbs = GET_PAGE (VOID, HostVmcbs,  Context->NumEnabledProcessors);
+  HostVmcbs  = GET_PAGE (VOID, HostStacks, Private.NumEnabledProcessors);
+  GuestVmcbs = GET_PAGE (VOID, HostVmcbs,  Private.NumEnabledProcessors);
   //
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
   ZeroMem (MsrPm,      (4 * SIZE_4KB));
-  ZeroMem (GuestVmcbs, (Context->NumEnabledProcessors * SIZE_4KB));
+  ZeroMem (GuestVmcbs, (Private.NumEnabledProcessors * SIZE_4KB));
   //
   // Set up the generic VMCB used on all cores.
   //
@@ -461,7 +464,7 @@ AmdEmuVirtualizeSystem (
   GuestVmcb->GuestAsid      = 1;
   GuestVmcb->NP_ENABLE      = 1;
   GuestVmcb->N_CR3          = CreateIdentityMappingPageTables (
-                                Context,
+                                &Private,
                                 InternalSplitAndUnmapPage
                                 );
   GuestVmcb->VmcbSaveState  = ((UINT64)(UINTN)GuestVmcb + 0x400);
@@ -469,7 +472,7 @@ AmdEmuVirtualizeSystem (
   //
   // Copy the template to all VMCBs.
   //
-  for (Index = 1; Index < Context->NumEnabledProcessors; ++Index) {
+  for (Index = 1; Index < Private.NumEnabledProcessors; ++Index) {
     VmcbWalker = GET_PAGE (AMD_VMCB_CONTROL_AREA, GuestVmcb, Index);
     CopyMem (VmcbWalker, GuestVmcb, SIZE_4KB);
     VmcbWalker->VmcbSaveState = ((UINT64)(UINTN)VmcbWalker + 0x400);
@@ -477,21 +480,20 @@ AmdEmuVirtualizeSystem (
   //
   // Enable AP virtualization.
   //
-  MpServices  = Context->MpServices;
   NumFinished = 0;
   BspOffset   = 0;
-  for (Index = 0; Index < Context->NumProcessors; ++Index) {
-    if (Index == Context->BspNum) {
+  for (Index = 0; Index < Private.NumProcessors; ++Index) {
+    if (Index == Private.BspNum) {
       BspOffset = NumFinished;
       ++NumFinished;
       continue;
     }
 
-    Status = MpServices->GetProcessorInfo (
-                           MpServices,
-                           Index,
-                           &ProcessorInfo
-                           );
+    Status = Private.MpServices->GetProcessorInfo (
+                                   Private.MpServices,
+                                   Index,
+                                   &ProcessorInfo
+                                   );
     ASSERT_EFI_ERROR (Status);
     if (EFI_ERROR (Status)
      || ((ProcessorInfo.StatusFlag & PROCESSOR_ENABLED_BIT) == 0)) {
@@ -499,37 +501,40 @@ AmdEmuVirtualizeSystem (
     }
 
     DEBUG_CODE (
-      if (NumFinished == Context->NumEnabledProcessors) {
+      if (NumFinished == Private.NumEnabledProcessors) {
         ASSERT (FALSE);
         break;
       }
       );
-
-    Context->Thread.GuestVmcb = GET_PAGE (
-                                  AMD_VMCB_CONTROL_AREA,
-                                  GuestVmcbs,
-                                  NumFinished
-                                  );
-    Context->Thread.HostVmcb = GET_PAGE (
-                                 AMD_VMCB_CONTROL_AREA,
-                                 HostVmcbs,
-                                 NumFinished
-                                 );
-    Context->Thread.HostStack = GET_PAGE (VOID, HostStacks, NumFinished);
-    Status = MpServices->StartupThisAP (
-                           MpServices,
-                           InternalVirtualizeAp,
-                           Index,
-                           NULL,
-                           0,
-                           &Context->Thread,
-                           NULL
-                           );
+    //
+    // Pages are identity-mapped across all cores and the APs are only going to
+    // read data, hence using stack memory is safe.
+    //
+    ThreadPrivate.GuestVmcb = GET_PAGE (
+                                AMD_VMCB_CONTROL_AREA,
+                                GuestVmcbs,
+                                NumFinished
+                                );
+    ThreadPrivate.HostVmcb = GET_PAGE (
+                               AMD_VMCB_CONTROL_AREA,
+                               HostVmcbs,
+                               NumFinished
+                               );
+    ThreadPrivate.HostStack = GET_PAGE (VOID, HostStacks, NumFinished);
+    Status = Private.MpServices->StartupThisAP (
+                                   Private.MpServices,
+                                   InternalVirtualizeAp,
+                                   Index,
+                                   NULL,
+                                   0,
+                                   &ThreadPrivate,
+                                   NULL
+                                   );
     ASSERT_EFI_ERROR (Status);
 
     ++NumFinished;
 
-    if (NumFinished == Context->NumEnabledProcessors) {
+    if (NumFinished == Private.NumEnabledProcessors) {
       DEBUG_CODE (
         continue;
         );
@@ -554,7 +559,7 @@ InternalExitBootServices (
   )
 {
   ASSERT (Context != NULL);
-  AmdEmuVirtualizeSystem ((AMD_EMU_PRIVATE *)Context);
+  AmdEmuVirtualizeSystem (Context);
 }
 
 BOOLEAN
@@ -623,6 +628,7 @@ AmdEmuEntryPoint (
     return FALSE;
   }
 
+  Memory->Address              = (UINTN)Memory;
   Memory->Size                 = Size;
   Memory->MpServices           = MpServices;
   Memory->NumProcessors        = NumProcessors;
