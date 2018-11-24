@@ -98,7 +98,7 @@ AmdInterceptionHandler (
     case VMEXIT_CPUID:
     {
       AmdEmuInterceptCpuid (SaveState, Registers);
-      InternalRaiseRip (Vmcb, NULL);
+      InternalRaiseRip (Vmcb);
       break;
     }
 
@@ -111,7 +111,7 @@ AmdInterceptionHandler (
         AmdIntelEmuInternalInterceptWrmsr (SaveState, Registers);
       }
 
-      InternalRaiseRip (Vmcb, NULL);
+      InternalRaiseRip (Vmcb);
 
       break;
     }
