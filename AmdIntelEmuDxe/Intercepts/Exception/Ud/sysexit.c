@@ -27,25 +27,25 @@ AmdIntelEmuInternalUdSysexit (
 
   ASSERT (ThreadContext->Registers != NULL);
 
-  if (Instruction->p_lock != 0) {
-    // TODO: #UD
-    return;
-  }
-
   Vmcb = ThreadContext->Vmcb;
   ASSERT (Vmcb != NULL);
+
+  if (Instruction->p_lock != 0) {
+    AmdIntelEmuInternalInjectUd (Vmcb);
+    return;
+  }
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
   ASSERT (SaveState != NULL);
 
   if (SaveState->CPL != 0) {
-    // TODO: GP(0)
+    AmdIntelEmuInternalInjectGp (Vmcb, 0);
     return;
   }
 
   SysenterCs.Uint64 = AsmReadMsr64 (MSR_IA32_SYSENTER_CS);
   if ((SysenterCs.Bits.CS & 0xFFFCU) == 0) {
-    // TODO: GP(0)
+    AmdIntelEmuInternalInjectGp (Vmcb, 0);
     return;
   }
 

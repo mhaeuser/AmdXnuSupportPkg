@@ -64,7 +64,7 @@ AmdInterceptionHandler (
 
     case VMEXIT_VMRUN:
     {
-      // TODO: Inject #UD for vmrun execution within the guest.
+      AmdIntelEmuInternalInjectUd (Vmcb);
       break;
     }
 
@@ -76,6 +76,10 @@ AmdInterceptionHandler (
   }
 
   if (Vmcb->EXITINTINFO.Bits.V != 0) {
-    Vmcb->EVENTINJ = Vmcb->EXITINTINFO;
+    if (Vmcb->EVENTINJ.Bits.V == 0) {
+      Vmcb->EVENTINJ = Vmcb->EXITINTINFO;
+    } else {
+      // TODO: Implement.
+    }
   }
 }

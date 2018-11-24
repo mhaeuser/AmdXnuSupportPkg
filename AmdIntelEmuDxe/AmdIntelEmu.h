@@ -434,6 +434,20 @@ typedef PACKED struct {
 
 VERIFY_SIZE_OF (AMD_VMCB_CONTROL_AREA, 0x400);
 
+typedef union {
+  PACKED struct {
+    UINT32 Type : 4;
+    UINT32 S    : 1;
+    UINT32 DPL  : 2;
+    UINT32 P    : 1;
+    UINT32 AVL  : 1;
+    UINT32 L    : 1;
+    UINT32 DB   : 1;
+    UINT32 G    : 1;
+  }      Bits;
+  UINT16 Uint16;
+} AMD_VMCB_SAVE_STATE_SEGMENT_ATTRIBUTES;
+
 typedef PACKED struct {
   UINT16 Selector;
   UINT16 Attributes;
@@ -566,6 +580,17 @@ UINTN
 CreateIdentityMappingPageTables (
   IN CONST VOID                      *Context,
   IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE  SplitUnmapPage
+  );
+
+VOID
+AmdIntelEmuInternalInjectUd (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  );
+
+VOID
+AmdIntelEmuInternalInjectGp (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN     UINT8                  ErrorCode
   );
 
 #endif // AMD_INTEL_EMU_H_
