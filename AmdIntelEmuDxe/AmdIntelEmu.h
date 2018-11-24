@@ -230,6 +230,7 @@ typedef union {
 } IA32_SEGMENT_ATTRIBUTES;
 
 enum {
+  VMEXIT_EXCP_DB = 0x41,
   VMEXIT_EXCP_UD = 0x46,
   VMEXIT_CPUID   = 0x72,
   VMEXIT_MSR     = 0x7C,
@@ -511,9 +512,27 @@ typedef PACKED struct {
 
 typedef struct AMD_INTEL_EMU_THREAD_CONTEXT AMD_INTEL_EMU_THREAD_CONTEXT;
 
+typedef
+VOID
+(*AMD_INTEL_EMU_SINGLE_STEP_RESUME) (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN     UINTN                  ResumeContext
+  );
+
 struct AMD_INTEL_EMU_THREAD_CONTEXT  {
-  AMD_VMCB_CONTROL_AREA *Vmcb;
-  AMD_EMU_REGISTERS     *Registers;
+  AMD_VMCB_CONTROL_AREA            *Vmcb;
+  AMD_EMU_REGISTERS                *Registers;
+  //
+  // Single-stepping.
+  //
+  BOOLEAN                          SsTf;
+  BOOLEAN                          Btf;
+  UINTN                            SingleStepContext;
+  AMD_INTEL_EMU_SINGLE_STEP_RESUME SingleStepResume;
+  //
+  // iret interception.
+  //
+  BOOLEAN                          IretTf;
 };
 
 VOID
@@ -521,6 +540,13 @@ EFIAPI
 AmdEnableVm (
   IN OUT VOID  *Vmcb,
   IN     VOID  *HostStack
+  );
+
+VOID
+AmdIntelEmuInternalSingleStepRip (
+  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT      *ThreadContext,
+  IN     AMD_INTEL_EMU_SINGLE_STEP_RESUME  ResumeHandler,
+  IN     UINTN                             ResumeContext
   );
 
 UINTN
