@@ -24,6 +24,16 @@ AmdIntelEmuInternalInterceptWrmsr (
   );
 
 VOID
+AmdIntelEmuInternalExceptionUd (
+  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext
+  );
+
+VOID
+AmdIntelEmuInternalExceptionDebug (
+  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext
+  );
+
+VOID
 AmdIntelEmuInternalGetRipInstruction (
   IN  CONST AMD_VMCB_CONTROL_AREA  *Vmcb,
   OUT hde64s                       *Instruction
@@ -95,6 +105,22 @@ AmdInterceptionHandler (
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
 
   switch (Vmcb->EXITCODE) {
+    case VMEXIT_EXCP_UD:
+    {
+      AmdIntelEmuInternalExceptionUd (
+        AmdIntelEmuInternalGetThreadContext (Vmcb)
+        );
+      break;
+    }
+    
+    case VMEXIT_EXCP_DB:
+    {
+      AmdIntelEmuInternalExceptionDebug (
+        AmdIntelEmuInternalGetThreadContext (Vmcb)
+        );
+      break;
+    }
+
     case VMEXIT_CPUID:
     {
       AmdEmuInterceptCpuid (SaveState, Registers);

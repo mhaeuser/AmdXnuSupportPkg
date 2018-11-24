@@ -50,7 +50,7 @@ AmdIntelEmuInternalInjectGp (
 }
 
 VOID
-AmdIntelEmuInternalExceptionDb (
+AmdIntelEmuInternalExceptionUd (
   IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext
   )
 {
