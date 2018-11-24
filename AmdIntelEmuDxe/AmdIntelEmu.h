@@ -609,6 +609,12 @@ CreateIdentityMappingPageTables (
   );
 
 VOID
+AmdIntelEmuInternalGetRipInstruction (
+  IN  CONST AMD_VMCB_CONTROL_AREA  *Vmcb,
+  OUT hde64s                       *Instruction
+  );
+
+VOID
 AmdIntelEmuInternalInjectUd (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   );

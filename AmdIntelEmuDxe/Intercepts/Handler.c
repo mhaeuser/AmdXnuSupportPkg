@@ -24,6 +24,33 @@ AmdIntelEmuInternalInterceptWrmsr (
   );
 
 VOID
+AmdIntelEmuInternalGetRipInstruction (
+  IN  CONST AMD_VMCB_CONTROL_AREA  *Vmcb,
+  OUT hde64s                       *Instruction
+  )
+{
+  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  UINTN                                 Address;
+  IA32_SEGMENT_ATTRIBUTES               SegAttrib;
+
+  ASSERT (Vmcb != NULL);
+  ASSERT (Instruction != NULL);
+
+  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
+
+  Address = SaveState->RIP;
+  //
+  // CS Base is ignored in Long Mode.
+  //
+  SegAttrib.Uint16 = SaveState->CS.Attributes;
+  if (SegAttrib.Bits.L == 0) {
+    Address += (SaveState->CS.Base << 4U);
+  }
+
+  hde64_disasm ((VOID *)Address, Instruction);
+}
+VOID
 EFIAPI
 AmdInterceptionHandler (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,

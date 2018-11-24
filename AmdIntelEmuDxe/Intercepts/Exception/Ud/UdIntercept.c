@@ -58,7 +58,7 @@ AmdIntelEmuInternalExceptionDb (
 
   ASSERT (ThreadContext != NULL);
 
-  hde64_disasm (NULL, &Instruction);
+  AmdIntelEmuInternalGetRipInstruction (ThreadContext->Vmcb, &Instruction);
   if ((Instruction.flags & F_ERROR) == 0) {
     if (Instruction.opcode == 0x0F) {
       switch (Instruction.opcode2) {
