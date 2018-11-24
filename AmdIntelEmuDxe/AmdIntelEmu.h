@@ -519,7 +519,7 @@ VOID
   IN     UINTN                  ResumeContext
   );
 
-struct AMD_INTEL_EMU_THREAD_CONTEXT  {
+struct AMD_INTEL_EMU_THREAD_CONTEXT {
   AMD_VMCB_CONTROL_AREA            *Vmcb;
   AMD_EMU_REGISTERS                *Registers;
   //

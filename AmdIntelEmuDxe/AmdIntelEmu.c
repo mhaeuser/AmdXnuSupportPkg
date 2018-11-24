@@ -45,6 +45,8 @@ InternalIsSvmAvailable (
   CPUID_AMD_EXTENDED_CPU_SIG_ECX           ExtendedCpuSigEcx;
   CPUID_AMD_SVM_FEATURE_IDENTIFICATION_EDX SvmFeatureIdEdx;
   MSR_VM_CR_REGISTER                       VmCrRegister;
+
+  ASSERT (NpSupport != NULL);
   
   AsmCpuid (
     CPUID_EXTENDED_CPU_SIG,
@@ -211,11 +213,10 @@ InternalInitializeSaveStateSelector (
 STATIC
 VOID
 InternalLaunchVmEnvironment (
-  IN OUT   AMD_VMCB_CONTROL_AREA  *GuestVmcb,
-  IN CONST AMD_VMCB_CONTROL_AREA  *HostVmcb,
-  IN       VOID                   *HostStack
+  IN CONST AMD_EMU_THREAD_PRIVATE  *Private
   )
 {
+  AMD_VMCB_CONTROL_AREA           *GuestVmcb;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   MSR_VM_CR_REGISTER              VmCrMsr;
   MSR_AMD_EFER_REGISTER           EferMsr;
@@ -226,10 +227,18 @@ InternalLaunchVmEnvironment (
   UINTN                           Cr0;
   MSR_IA32_PAT_REGISTER           PatMsr;
 
+  ASSERT (Private != NULL);
+
+  ASSERT (Private->GuestVmcb != NULL);
+  ASSERT (Private->HostVmcb != NULL);
+  ASSERT (Private->HostStack != NULL);
+
+  AsmWriteMsr64 (MSR_VM_HSAVE_PA, (UINTN)Private->HostVmcb);
+
+  GuestVmcb = Private->GuestVmcb;
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(
                 (UINTN)GuestVmcb->VmcbSaveState
                 );
-  AsmWriteMsr64 (MSR_VM_HSAVE_PA, (UINTN)HostVmcb);
   //
   // Disable interrupts to guarantee an atomic state switch.  vmrun will
   // re-enable it once the guest has launched.
@@ -347,7 +356,7 @@ InternalLaunchVmEnvironment (
   //
   // Virtualize the current execution environment.  This call will return here.
   //
-  AmdEnableVm (GuestVmcb, HostStack);
+  AmdEnableVm (GuestVmcb, Private->HostStack);
 }
 
 STATIC
@@ -357,16 +366,8 @@ InternalVirtualizeAp (
   IN OUT VOID  *Buffer
   )
 {
-  CONST AMD_EMU_THREAD_PRIVATE *Private;
-
   ASSERT (Buffer != NULL);
-
-  Private = (AMD_EMU_THREAD_PRIVATE *)Buffer;
-  InternalLaunchVmEnvironment (
-    Private->GuestVmcb,
-    Private->HostVmcb,
-    Private->HostStack
-    );
+  InternalLaunchVmEnvironment ((AMD_EMU_THREAD_PRIVATE *)Buffer);
 }
 
 STATIC
@@ -555,11 +556,18 @@ AmdEmuVirtualizeSystem (
   //
   // Enable BSP virtualization.
   //
-  InternalLaunchVmEnvironment (
-    GET_PAGE (AMD_VMCB_CONTROL_AREA, GuestVmcbs, BspOffset),
-    GET_PAGE (AMD_VMCB_CONTROL_AREA, HostVmcbs, BspOffset),
-    GET_PAGE (VOID, HostStacks, BspOffset)
-    );
+  ThreadPrivate.GuestVmcb = GET_PAGE (
+                              AMD_VMCB_CONTROL_AREA,
+                              GuestVmcbs,
+                              BspOffset
+                              );
+  ThreadPrivate.HostVmcb = GET_PAGE (
+                             AMD_VMCB_CONTROL_AREA,
+                             HostVmcbs,
+                             BspOffset
+                             );
+  ThreadPrivate.HostStack = GET_PAGE (VOID, HostStacks, BspOffset);
+  InternalLaunchVmEnvironment (&ThreadPrivate);
 }
 
 VOID
@@ -569,6 +577,7 @@ InternalExitBootServices (
   IN VOID       *Context
   )
 {
+  ASSERT (Event != NULL);
   ASSERT (Context != NULL);
   AmdEmuVirtualizeSystem (Context);
 }
