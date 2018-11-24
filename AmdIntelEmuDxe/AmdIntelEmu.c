@@ -31,6 +31,7 @@ typedef struct {
   UINTN                    NumProcessors;
   UINTN                    NumEnabledProcessors;
   UINTN                    BspNum;
+  BOOLEAN                  NpSupport;
 } AMD_EMU_PRIVATE;
 
 GLOBAL_REMOVE_IF_UNREFERENCED BOOLEAN mAmdIntelEmuInternalNrip = FALSE;
@@ -38,7 +39,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED BOOLEAN mAmdIntelEmuInternalNrip = FALSE;
 STATIC
 BOOLEAN
 InternalIsSvmAvailable (
-	VOID
+	OUT UINT8  *NpSupport
   )
 {
   CPUID_AMD_EXTENDED_CPU_SIG_ECX           ExtendedCpuSigEcx;
@@ -71,6 +72,8 @@ InternalIsSvmAvailable (
     if (SvmFeatureIdEdx.Bits.NRIPS != 0) {
       mAmdIntelEmuInternalNrip = TRUE;
     }
+
+    *NpSupport = (UINT8)SvmFeatureIdEdx.Bits.NP;
     //
     // SVMDIS is read-only when locking is unsupported.
     //
@@ -468,11 +471,13 @@ AmdEmuVirtualizeSystem (
   GuestVmcb->IOPM_BASE_PA   = (UINT64)(UINTN)IoPm;
   GuestVmcb->MSRPM_BASE_PA  = (UINT64)(UINTN)MsrPm;
   GuestVmcb->GuestAsid      = 1;
-  GuestVmcb->NP_ENABLE      = 1;
-  GuestVmcb->N_CR3          = CreateIdentityMappingPageTables (
-                                &Private,
-                                InternalSplitAndUnmapPage
-                                );
+  if (Private.NpSupport) {
+    GuestVmcb->NP_ENABLE = 1;
+    GuestVmcb->N_CR3     = CreateIdentityMappingPageTables (
+                             &Private,
+                             InternalSplitAndUnmapPage
+                             );
+  }
   GuestVmcb->VmcbSaveState  = ((UINT64)(UINTN)GuestVmcb + 0x400);
   AmdIntelEmuInternalInitMsrPm (GuestVmcb);
   //
@@ -582,8 +587,9 @@ AmdEmuEntryPoint (
   UINTN                    BspNum;
   UINTN                    Index;
   EFI_EVENT                Event;
+  UINT8                    NpSupport;
 
-  if (!InternalIsSvmAvailable ()) {
+  if (!InternalIsSvmAvailable (&NpSupport)) {
     return FALSE;
   }
 
@@ -640,7 +646,7 @@ AmdEmuEntryPoint (
   Memory->NumProcessors        = NumProcessors;
   Memory->NumEnabledProcessors = NumEnabledProcessors;
   Memory->BspNum               = BspNum;
-
+  Memory->NpSupport            = (NpSupport != 0);
   Status = gBS->CreateEvent (
                   EVT_SIGNAL_EXIT_BOOT_SERVICES,
                   TPL_CALLBACK,
