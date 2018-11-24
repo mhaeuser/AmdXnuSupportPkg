@@ -625,4 +625,6 @@ AmdIntelEmuInternalInjectGp (
   IN     UINT8                  ErrorCode
   );
 
+extern BOOLEAN mAmdIntelEmuInternalNrip;
+
 #endif // AMD_INTEL_EMU_H_

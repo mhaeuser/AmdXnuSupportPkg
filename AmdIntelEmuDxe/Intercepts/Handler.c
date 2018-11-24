@@ -50,6 +50,30 @@ AmdIntelEmuInternalGetRipInstruction (
 
   hde64_disasm ((VOID *)Address, Instruction);
 }
+
+STATIC
+VOID
+InternalRaiseRip (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  )
+{
+  AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  hde64s                          Instruction;
+
+  ASSERT (Vmcb != NULL);
+
+  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
+
+  if (mAmdIntelEmuInternalNrip) {
+    SaveState->RIP = Vmcb->nRIP;
+  } else {
+    AmdIntelEmuInternalGetRipInstruction (Vmcb, &Instruction);
+    ASSERT ((Instruction.flags & F_ERROR) != 0);
+    SaveState->RIP += Instruction.len;
+  }
+}
+
 VOID
 EFIAPI
 AmdInterceptionHandler (
@@ -74,6 +98,7 @@ AmdInterceptionHandler (
     case VMEXIT_CPUID:
     {
       AmdEmuInterceptCpuid (SaveState, Registers);
+      InternalRaiseRip (Vmcb, NULL);
       break;
     }
 
@@ -85,6 +110,8 @@ AmdInterceptionHandler (
         ASSERT (Vmcb->EXITINFO1 == 1);
         AmdIntelEmuInternalInterceptWrmsr (SaveState, Registers);
       }
+
+      InternalRaiseRip (Vmcb, NULL);
 
       break;
     }

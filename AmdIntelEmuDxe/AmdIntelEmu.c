@@ -33,6 +33,8 @@ typedef struct {
   UINTN                    BspNum;
 } AMD_EMU_PRIVATE;
 
+GLOBAL_REMOVE_IF_UNREFERENCED BOOLEAN mAmdIntelEmuInternalNrip = FALSE;
+
 STATIC
 BOOLEAN
 InternalIsSvmAvailable (
@@ -65,6 +67,10 @@ InternalIsSvmAvailable (
       NULL,
       &SvmFeatureIdEdx.Uint32
       );
+
+    if (SvmFeatureIdEdx.Bits.NRIPS != 0) {
+      mAmdIntelEmuInternalNrip = TRUE;
+    }
     //
     // SVMDIS is read-only when locking is unsupported.
     //

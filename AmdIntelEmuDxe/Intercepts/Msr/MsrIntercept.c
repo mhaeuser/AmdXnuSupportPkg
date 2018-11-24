@@ -182,10 +182,6 @@ AmdIntelEmuInternalInterceptRdmsr (
   UINT32                            MsrIndex;
   UINTN                             Index;
   CONST INTERNAL_MSR_INTERCEPT_INFO *MsrIntercept;
-  //
-  // The rdmsr and wrmsr opcodes are both two bytes long.
-  //
-  SaveState->RIP += 2;
 
   MsrIndex = BitFieldRead32 (Registers->Rcx, 0, 31);
 

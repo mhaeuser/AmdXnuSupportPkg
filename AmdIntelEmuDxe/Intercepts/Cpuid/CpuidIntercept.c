@@ -62,10 +62,6 @@ AmdEmuInterceptCpuid (
 
   ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
-  //
-  // The cpuid opcode is two bytes long.
-  //
-  SaveState->RIP += 2;
 
   CpuidIndex = BitFieldRead32 (SaveState->RAX, 0, 31);
 
