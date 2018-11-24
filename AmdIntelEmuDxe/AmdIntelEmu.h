@@ -2,6 +2,7 @@
 #define AMD_INTEL_EMU_H_
 
 #include "VirtualMemory/VirtualMemory.h"
+#include "hde/hde64.h"
 
 #define CR0_CD  BIT30
 
@@ -493,6 +494,13 @@ typedef PACKED struct {
 } AMD_EMU_REGISTERS;
 
 #pragma pack ()
+
+typedef struct AMD_INTEL_EMU_THREAD_CONTEXT AMD_INTEL_EMU_THREAD_CONTEXT;
+
+struct AMD_INTEL_EMU_THREAD_CONTEXT  {
+  AMD_VMCB_CONTROL_AREA *Vmcb;
+  AMD_EMU_REGISTERS     *Registers;
+};
 
 VOID
 EFIAPI
