@@ -15,8 +15,8 @@
 
 #define AMD_EMU_STACK_PAGES  1U
 
-#define GET_PAGE(TYPE, Address, Index)  \
-  ((TYPE *)((UINTN)(Address) + ((Index) * SIZE_4KB)))
+#define GET_PAGE(Address, Index)  \
+  ((VOID *)((UINTN)(Address) + ((Index) * SIZE_4KB)))
 
 typedef struct {
   AMD_VMCB_CONTROL_AREA *GuestVmcb;
@@ -469,17 +469,17 @@ AmdEmuVirtualizeSystem (
   //   protected.
   //
 
-  MsrPm = GET_PAGE (VOID, Memory, 0);
-  IoPm  = GET_PAGE (VOID, MsrPm,   1);
+  MsrPm = GET_PAGE (Memory, 0);
+  IoPm  = GET_PAGE (MsrPm,  1);
   //
   // Place the stack before the VMCBs and after the Protection Maps, so if it
   // shall overflow, it does not corrupt any critical VM information.
   // The PMs' high memory is reserved.
   //
-  HostStacks     = GET_PAGE (VOID, IoPm,       3);
-  HostVmcbs      = GET_PAGE (VOID, HostStacks, Private.NumEnabledProcessors);
-  GuestVmcbs     = GET_PAGE (VOID, HostVmcbs,  Private.NumEnabledProcessors);
-  ThreadContexts = GET_PAGE (VOID, GuestVmcbs, Private.NumEnabledProcessors);
+  HostStacks     = GET_PAGE (IoPm,       3);
+  HostVmcbs      = GET_PAGE (HostStacks, Private.NumEnabledProcessors);
+  GuestVmcbs     = GET_PAGE (HostVmcbs,  Private.NumEnabledProcessors);
+  ThreadContexts = GET_PAGE (GuestVmcbs, Private.NumEnabledProcessors);
 
   mInternalThreadContexts    = ThreadContexts;
   mInternalNumThreadContexts = Private.NumEnabledProcessors;
@@ -514,7 +514,7 @@ AmdEmuVirtualizeSystem (
   // Copy the template to all VMCBs.
   //
   for (Index = 1; Index < Private.NumEnabledProcessors; ++Index) {
-    VmcbWalker = GET_PAGE (AMD_VMCB_CONTROL_AREA, GuestVmcb, Index);
+    VmcbWalker = GET_PAGE (GuestVmcb, Index);
     CopyMem (VmcbWalker, GuestVmcb, SIZE_4KB);
     VmcbWalker->VmcbSaveState = ((UINT64)(UINTN)VmcbWalker + 0x400);
   }
@@ -524,11 +524,7 @@ AmdEmuVirtualizeSystem (
   NumFinished = 0;
   BspOffset   = 0;
   for (Index = 0; Index < Private.NumProcessors; ++Index) {
-    GuestVmcb = GET_PAGE (
-                  AMD_VMCB_CONTROL_AREA,
-                  GuestVmcbs,
-                  NumFinished
-                  );
+    GuestVmcb = GET_PAGE (GuestVmcbs, NumFinished);
     ThreadContexts[Index].Vmcb = GuestVmcb;
 
     if (Index == Private.BspNum) {
@@ -559,12 +555,8 @@ AmdEmuVirtualizeSystem (
     // read data, hence using stack memory is safe.
     //
     ThreadPrivate.GuestVmcb = GuestVmcb;
-    ThreadPrivate.HostVmcb  = GET_PAGE (
-                                AMD_VMCB_CONTROL_AREA,
-                                HostVmcbs,
-                                NumFinished
-                                );
-    ThreadPrivate.HostStack = GET_PAGE (VOID, HostStacks, NumFinished);
+    ThreadPrivate.HostVmcb  = GET_PAGE (HostVmcbs, NumFinished);
+    ThreadPrivate.HostStack = GET_PAGE (HostStacks, NumFinished);
     Status = Private.MpServices->StartupThisAP (
                                    Private.MpServices,
                                    InternalVirtualizeAp,
@@ -588,17 +580,9 @@ AmdEmuVirtualizeSystem (
   //
   // Enable BSP virtualization.
   //
-  ThreadPrivate.GuestVmcb = GET_PAGE (
-                              AMD_VMCB_CONTROL_AREA,
-                              GuestVmcbs,
-                              BspOffset
-                              );
-  ThreadPrivate.HostVmcb = GET_PAGE (
-                             AMD_VMCB_CONTROL_AREA,
-                             HostVmcbs,
-                             BspOffset
-                             );
-  ThreadPrivate.HostStack = GET_PAGE (VOID, HostStacks, BspOffset);
+  ThreadPrivate.GuestVmcb = GET_PAGE (GuestVmcbs, BspOffset);
+  ThreadPrivate.HostVmcb  = GET_PAGE (HostVmcbs,  BspOffset);
+  ThreadPrivate.HostStack = GET_PAGE (HostStacks, BspOffset);
   InternalLaunchVmEnvironment (&ThreadPrivate);
 }
 
