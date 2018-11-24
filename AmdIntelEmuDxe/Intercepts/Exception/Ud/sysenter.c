@@ -13,11 +13,11 @@ AmdIntelEmuInternalUdSysenter (
   IN     CONST hde64s                  *Instruction
   )
 {
-  AMD_VMCB_CONTROL_AREA                  *Vmcb;
-  AMD_VMCB_SAVE_STATE_AREA_NON_ES        *SaveState;
-  MSR_IA32_SYSENTER_CS_REGISTER          SysenterCs;
-  IA32_EFLAGS32                          Eflags;
-  AMD_VMCB_SAVE_STATE_SEGMENT_ATTRIBUTES SegAttrib;
+  AMD_VMCB_CONTROL_AREA           *Vmcb;
+  AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  MSR_IA32_SYSENTER_CS_REGISTER   SysenterCs;
+  IA32_EFLAGS32                   Eflags;
+  IA32_SEGMENT_ATTRIBUTES         SegAttrib;
   //
   // sysenter is available in all legacy and compatibility modes (except Real
   // Mode), hence this function is safe to assume Long Mode.
