@@ -587,7 +587,7 @@ AmdEmuEntryPoint (
   VOID
   )
 {
-  UINTN                    Size;
+  UINTN                    NumPages;
   AMD_EMU_PRIVATE          *Memory;
   EFI_STATUS               Status;
   EFI_MP_SERVICES_PROTOCOL *MpServices;
@@ -643,14 +643,14 @@ AmdEmuEntryPoint (
   // Allocate at a 2 MB boundary so they will be covered by a single 2 MB Page
   // Table entry.
   //
-  Size   = (3 + 1 + (NumEnabledProcessors * (AMD_EMU_STACK_PAGES + 2)));
-  Memory = AllocateAlignedReservedPages (Size, SIZE_2MB);
+  NumPages = (3 + 1 + (NumEnabledProcessors * (AMD_EMU_STACK_PAGES + 2)));
+  Memory   = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
   if (Memory == NULL) {
     return FALSE;
   }
 
   Memory->Address              = (UINTN)Memory;
-  Memory->Size                 = Size;
+  Memory->Size                 = EFI_PAGES_TO_SIZE (NumPages);
   Memory->MpServices           = MpServices;
   Memory->NumProcessors        = NumProcessors;
   Memory->NumEnabledProcessors = NumEnabledProcessors;
