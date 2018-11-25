@@ -684,6 +684,7 @@ AmdEmuEntryPoint (
                   );
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
+    FreeAlignedPages (Memory, NumPages);
     return FALSE;
   }
 
