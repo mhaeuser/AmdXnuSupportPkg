@@ -2,7 +2,6 @@
 
 #include <Register/ArchitecturalMsr.h>
 
-#include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 
 #include "../../AmdIntelEmu.h"
@@ -19,9 +18,7 @@ AmdIntelEmuInternalWrmsrPat (
   ASSERT (Registers != NULL);
   //
   // Undocumented fix by Bronya: Force WT-by-default PAT1 and PAT5 entries into
-  // WC mode.
-  // TODO: Is forcing the other PAT entries into default as done in the kenrel
-  //       necessary? Why does this work? Do all WTs need to be forced into WC?
+  // WC mode.  This is also done in the Linux kernel.
   //
   PatMsr.Uint64 = AmdIntelEmuInternalReadMsrValue64 (
                     &SaveState->RAX,
