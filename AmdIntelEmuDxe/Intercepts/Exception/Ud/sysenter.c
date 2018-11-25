@@ -9,11 +9,10 @@
 
 VOID
 AmdIntelEmuInternalUdSysenter (
-  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext,
-  IN     CONST hde64s                  *Instruction
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN     CONST hde64s           *Instruction
   )
 {
-  AMD_VMCB_CONTROL_AREA           *Vmcb;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   MSR_IA32_SYSENTER_CS_REGISTER   SysenterCs;
   IA32_EFLAGS32                   Eflags;
@@ -22,13 +21,8 @@ AmdIntelEmuInternalUdSysenter (
   // sysenter is available in all legacy and compatibility modes (except Real
   // Mode), hence this function is safe to assume Long Mode.
   //
-  ASSERT (ThreadContext != NULL);
-  ASSERT (Instruction != NULL);
-
-  ASSERT (ThreadContext->Registers != NULL);
-
-  Vmcb = ThreadContext->Vmcb;
   ASSERT (Vmcb != NULL);
+  ASSERT (Instruction != NULL);
 
   if (Instruction->p_lock != 0) {
     AmdIntelEmuInternalInjectUd (Vmcb);

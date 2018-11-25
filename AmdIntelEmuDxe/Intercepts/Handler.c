@@ -1,6 +1,5 @@
 #include <Base.h>
 
-#include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 
 #include "../AmdIntelEmu.h"
@@ -25,7 +24,8 @@ AmdIntelEmuInternalInterceptWrmsr (
 
 VOID
 AmdIntelEmuInternalExceptionUd (
-  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN OUT AMD_EMU_REGISTERS      *Registers
   );
 
 VOID
@@ -107,9 +107,7 @@ AmdInterceptionHandler (
   switch (Vmcb->EXITCODE) {
     case VMEXIT_EXCP_UD:
     {
-      AmdIntelEmuInternalExceptionUd (
-        AmdIntelEmuInternalGetThreadContext (Vmcb)
-        );
+      AmdIntelEmuInternalExceptionUd (Vmcb, Registers);
       break;
     }
     

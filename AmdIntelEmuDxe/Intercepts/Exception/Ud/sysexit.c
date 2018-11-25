@@ -9,11 +9,11 @@
 
 VOID
 AmdIntelEmuInternalUdSysexit (
-  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext,
-  IN     CONST hde64s                  *Instruction
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN OUT AMD_EMU_REGISTERS      *Registers,
+  IN     CONST hde64s           *Instruction
   )
 {
-  AMD_VMCB_CONTROL_AREA           *Vmcb;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   MSR_IA32_SYSENTER_CS_REGISTER   SysenterCs;
   BOOLEAN                         Operand64;
@@ -22,13 +22,9 @@ AmdIntelEmuInternalUdSysexit (
   // sysexit is available in all legacy and compatibility modes (except Real
   // Mode), hence this function is safe to assume Long Mode.
   //
-  ASSERT (ThreadContext != NULL);
-  ASSERT (Instruction != NULL);
-
-  ASSERT (ThreadContext->Registers != NULL);
-
-  Vmcb = ThreadContext->Vmcb;
   ASSERT (Vmcb != NULL);
+  ASSERT (Registers != NULL);
+  ASSERT (Instruction != NULL);
 
   if (Instruction->p_lock != 0) {
     AmdIntelEmuInternalInjectUd (Vmcb);
@@ -54,20 +50,12 @@ AmdIntelEmuInternalUdSysexit (
   // Operating system provides CS; RPL forced to 3
   //
   if (Operand64) {
-    SaveState->RSP         = ThreadContext->Registers->Rcx;
-    SaveState->RIP         = ThreadContext->Registers->Rdx;
+    SaveState->RSP         = Registers->Rcx;
+    SaveState->RIP         = Registers->Rdx;
     SaveState->CS.Selector = ((SysenterCs.Bits.CS + 32) | 3U);
   } else {
-    SaveState->RSP = BitFieldRead64 (
-                       ThreadContext->Registers->Rcx,
-                       0,
-                       31
-                       );
-    SaveState->RIP = BitFieldRead64 (
-                       ThreadContext->Registers->Rdx,
-                       0,
-                       31
-                       );
+    SaveState->RSP         = BitFieldRead64 (Registers->Rcx, 0, 31);
+    SaveState->RIP         = BitFieldRead64 (Registers->Rdx, 0, 31);
     SaveState->CS.Selector = ((SysenterCs.Bits.CS + 16) | 3U);
   }
 
