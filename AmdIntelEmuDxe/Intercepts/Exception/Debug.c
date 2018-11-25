@@ -61,20 +61,19 @@ AmdIntelEmuInternalSingleStepRip (
 
 VOID
 AmdIntelEmuInternalExceptionDebug (
-  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   )
 {
-  AMD_VMCB_CONTROL_AREA           *Vmcb;
+  AMD_INTEL_EMU_THREAD_CONTEXT    *ThreadContext;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   IA32_EFLAGS32                   Eflags;
   MSR_IA32_DEBUGCTL_REGISTER      DebugCtlMsr;
 
-  ASSERT (ThreadContext != NULL);
-
-  Vmcb = ThreadContext->Vmcb;
   ASSERT (Vmcb != NULL);
+
+  ThreadContext = AmdIntelEmuInternalGetThreadContext (Vmcb);
+  ASSERT (ThreadContext != NULL);
   ASSERT (ThreadContext->SingleStepResume != NULL);
-  ASSERT (Vmcb->VmcbSaveState != 0);
 
   ThreadContext->SingleStepResume (
                    Vmcb,
@@ -87,6 +86,8 @@ AmdIntelEmuInternalExceptionDebug (
   Vmcb->VmcbCleanBits.Bits.I       = 0;
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
+
   ASSERT ((SaveState->DR6 & BIT14) != 0);
   
   if (!ThreadContext->SsTf) {

@@ -30,7 +30,7 @@ AmdIntelEmuInternalExceptionUd (
 
 VOID
 AmdIntelEmuInternalExceptionDebug (
-  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   );
 
 VOID
@@ -113,9 +113,7 @@ AmdInterceptionHandler (
     
     case VMEXIT_EXCP_DB:
     {
-      AmdIntelEmuInternalExceptionDebug (
-        AmdIntelEmuInternalGetThreadContext (Vmcb)
-        );
+      AmdIntelEmuInternalExceptionDebug (Vmcb);
       break;
     }
 
