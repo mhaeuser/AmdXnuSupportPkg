@@ -339,13 +339,14 @@ InternalLaunchVmEnvironment (
     );
   //
   // RIP and RSP are set in NASM, RAX may be 0 as it is non-volatile (EFIAPI).
-  // G_PAT is not set because nested paging is not used.
   //
   Cr0              = AsmReadCr0 ();
   SaveState->EFER  = EferMsr.Uint64;
   SaveState->CR4   = AsmReadCr4 ();
   SaveState->CR3   = AsmReadCr3 ();
-  SaveState->G_PAT = AsmReadMsr64 (MSR_IA32_PAT);
+  if (GuestVmcb->NP_ENABLE != 0) {
+    SaveState->G_PAT = AsmReadMsr64 (MSR_IA32_PAT);
+  }
   SaveState->CR0   = Cr0;
   SaveState->DR7   = AsmReadDr7 ();
   SaveState->DR6   = AsmReadDr6 ();
