@@ -13,7 +13,7 @@
 
 #include "AmdIntelEmu.h"
 
-#define AMD_EMU_STACK_PAGES  1U
+#define NUM_STACK_PAGES  1U
 
 #define GET_PAGE(Address, Index)  \
   ((VOID *)((UINTN)(Address) + ((Index) * SIZE_4KB)))
@@ -22,7 +22,7 @@ typedef struct {
   AMD_VMCB_CONTROL_AREA *GuestVmcb;
   AMD_VMCB_CONTROL_AREA *HostVmcb;
   VOID                  *HostStack;
-} AMD_EMU_THREAD_PRIVATE;
+} AMD_INTEL_EMU_THREAD_PRIVATE;
 
 typedef struct {
   UINTN                    Address;
@@ -32,7 +32,7 @@ typedef struct {
   UINTN                    NumEnabledProcessors;
   UINTN                    BspNum;
   BOOLEAN                  NpSupport;
-} AMD_EMU_PRIVATE;
+} AMD_INTEL_EMU_PRIVATE;
 
 STATIC AMD_INTEL_EMU_THREAD_CONTEXT *mInternalThreadContexts   = NULL;
 STATIC UINTN                        mInternalNumThreadContexts = 0;
@@ -237,7 +237,7 @@ InternalInitializeSaveStateSelector (
 STATIC
 VOID
 InternalLaunchVmEnvironment (
-  IN CONST AMD_EMU_THREAD_PRIVATE  *Private
+  IN CONST AMD_INTEL_EMU_THREAD_PRIVATE  *Private
   )
 {
   AMD_VMCB_CONTROL_AREA           *GuestVmcb;
@@ -353,7 +353,8 @@ InternalLaunchVmEnvironment (
   //
   // Enable caching on the host, this means the guest has control of the CD
   // setting.  This will be rolled back due to the guest context switch when
-  // returning from AmdEnableVm() if caching has been disabled before.
+  // returning from AmdIntelEmuInternalEnableVm() if caching has been disabled
+  // before.
   //
   if ((Cr0 & CR0_CD) != 0) {
     AsmWriteCr0 (Cr0 & ~(UINTN)CR0_CD);
@@ -380,7 +381,7 @@ InternalLaunchVmEnvironment (
   //
   // Virtualize the current execution environment.  This call will return here.
   //
-  AmdEnableVm (GuestVmcb, Private->HostStack);
+  AmdIntelEmuInternalEnableVm (GuestVmcb, Private->HostStack);
 }
 
 STATIC
@@ -391,7 +392,7 @@ InternalVirtualizeAp (
   )
 {
   ASSERT (Buffer != NULL);
-  InternalLaunchVmEnvironment ((AMD_EMU_THREAD_PRIVATE *)Buffer);
+  InternalLaunchVmEnvironment ((AMD_INTEL_EMU_THREAD_PRIVATE *)Buffer);
 }
 
 STATIC
@@ -402,14 +403,14 @@ InternalSplitAndUnmapPage (
   IN UINTN             Size
   )
 {
-  CONST AMD_EMU_PRIVATE *Private;
-  UINTN                 Start;
-  UINTN                 End;
+  CONST AMD_INTEL_EMU_PRIVATE *Private;
+  UINTN                       Start;
+  UINTN                       End;
 
   ASSERT (Context != NULL);
   ASSERT (Size > 0);
 
-  Private = (AMD_EMU_PRIVATE *)Context;
+  Private = (AMD_INTEL_EMU_PRIVATE *)Context;
   Start   = Private->Address;
   End     = (Start + Private->Size);
 
@@ -442,8 +443,8 @@ AmdEmuVirtualizeSystem (
   IN OUT VOID  *Memory
   )
 {
-  AMD_EMU_PRIVATE              Private;
-  AMD_EMU_THREAD_PRIVATE       ThreadPrivate;
+  AMD_INTEL_EMU_PRIVATE        Private;
+  AMD_INTEL_EMU_THREAD_PRIVATE ThreadPrivate;
   VOID                         *IoPm;
   VOID                         *MsrPm;
   VOID                         *HostStacks;
@@ -604,7 +605,7 @@ AmdEmuEntryPoint (
   )
 {
   UINTN                    NumPages;
-  AMD_EMU_PRIVATE          *Memory;
+  AMD_INTEL_EMU_PRIVATE    *Memory;
   EFI_STATUS               Status;
   EFI_MP_SERVICES_PROTOCOL *MpServices;
   UINTN                    NumProcessors;
@@ -659,7 +660,7 @@ AmdEmuEntryPoint (
   // Allocate at a 2 MB boundary so they will be covered by a single 2 MB Page
   // Table entry.
   //
-  NumPages  = (3 + 1 + (NumEnabledProcessors * (AMD_EMU_STACK_PAGES + 2)));
+  NumPages  = (3 + 1 + (NumEnabledProcessors * (NUM_STACK_PAGES + 2)));
   NumPages += EFI_SIZE_TO_PAGES (
                 NumEnabledProcessors * sizeof (AMD_INTEL_EMU_THREAD_CONTEXT)
                 );

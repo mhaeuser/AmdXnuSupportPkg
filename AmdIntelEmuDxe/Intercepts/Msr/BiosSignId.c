@@ -12,7 +12,7 @@ STATIC UINT32 mMicrocodeUpdateSignature = 186;
 VOID
 AmdIntelEmuInternalRdmsrBiosSignId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_EMU_REGISTERS                *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
   )
 {
   MSR_IA32_BIOS_SIGN_ID_REGISTER BiosSignIdMsr;
@@ -32,7 +32,7 @@ AmdIntelEmuInternalRdmsrBiosSignId (
 VOID
 AmdIntelEmuInternalWrmsrBiosSignId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_EMU_REGISTERS                *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
   )
 {
   UINT64 Value;

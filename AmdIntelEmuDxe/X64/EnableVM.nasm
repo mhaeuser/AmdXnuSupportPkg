@@ -3,8 +3,8 @@
 
 SECTION .text
 
-extern ASM_PFX (AmdEnableVm)
-ASM_PFX (AmdEnableVm):
+extern ASM_PFX (AmdIntelEmuInternalEnableVm)
+ASM_PFX (AmdIntelEmuInternalEnableVm):
   ;
   ; Save the caller stack to return transparently later.
   ;
@@ -44,7 +44,7 @@ ASM_PFX (AmdEnableVm):
   movaps  xmmword ptr [rsp + 0x70], xmm5
 
   mov     rcx, rax     ; Pass the VMCB.
-  call    ASM_PFX (AmdInterceptionHandler)
+  call    ASM_PFX (AmdIntelEmuInternalInterceptionHandler)
 
   movaps  xmm5, xmmword ptr [rsp + 0x70]
   movaps  xmm4, xmmword ptr [rsp + 0x60]

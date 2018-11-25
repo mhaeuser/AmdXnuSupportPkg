@@ -7,7 +7,7 @@
 VOID
 AmdIntelEmuInternalRdmsrX2apicVersion (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_EMU_REGISTERS                *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
   )
 {
   ASSERT (SaveState != NULL);
@@ -25,7 +25,7 @@ AmdIntelEmuInternalRdmsrX2apicVersion (
 VOID
 AmdIntelEmuInternalWrmsrX2apicVersion (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_EMU_REGISTERS                *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
   )
 {
   ASSERT (SaveState != NULL);

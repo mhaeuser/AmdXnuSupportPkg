@@ -12,9 +12,9 @@ AmdIntelEmuInternalUdSysenter (
 
 VOID
 AmdIntelEmuInternalUdSysexit (
-  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
-  IN OUT AMD_EMU_REGISTERS      *Registers,
-  IN     CONST hde64s           *Instruction
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers,
+  IN     CONST hde64s             *Instruction
   );
 
 VOID
@@ -51,8 +51,8 @@ AmdIntelEmuInternalInjectGp (
 
 VOID
 AmdIntelEmuInternalExceptionUd (
-  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
-  IN OUT AMD_EMU_REGISTERS      *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   )
 {
   hde64s Instruction;

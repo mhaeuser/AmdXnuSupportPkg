@@ -7,25 +7,25 @@
 VOID
 AmdEmuInterceptCpuid (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_EMU_REGISTERS                *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
   );
 
 VOID
 AmdIntelEmuInternalInterceptRdmsr (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_EMU_REGISTERS                *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
   );
 
 VOID
 AmdIntelEmuInternalInterceptWrmsr (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_EMU_REGISTERS                *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
   );
 
 VOID
 AmdIntelEmuInternalExceptionUd (
-  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
-  IN OUT AMD_EMU_REGISTERS      *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   );
 
 VOID
@@ -86,9 +86,9 @@ InternalRaiseRip (
 
 VOID
 EFIAPI
-AmdInterceptionHandler (
-  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
-  IN OUT AMD_EMU_REGISTERS      *Registers
+AmdIntelEmuInternalInterceptionHandler (
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   )
 {
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;

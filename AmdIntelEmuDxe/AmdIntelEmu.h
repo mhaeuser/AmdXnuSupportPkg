@@ -492,7 +492,7 @@ typedef PACKED struct {
   UINT64 Rbx;
   UINT64 Rcx;
   UINT64 Rdx;
-} AMD_EMU_REGISTERS;
+} AMD_INTEL_EMU_REGISTERS;
 
 #pragma pack ()
 
@@ -522,7 +522,7 @@ struct AMD_INTEL_EMU_THREAD_CONTEXT {
 
 VOID
 EFIAPI
-AmdEnableVm (
+AmdIntelEmuInternalEnableVm (
   IN OUT VOID  *Vmcb,
   IN     VOID  *HostStack
   );
@@ -547,15 +547,15 @@ AmdIntelEmuInternalInitMsrPm (
 
 UINT64
 AmdIntelEmuInternalReadMsrValue64 (
-  IN CONST UINT64             *Rax,
-  IN CONST AMD_EMU_REGISTERS  *Registers
+  IN CONST UINT64                   *Rax,
+  IN CONST AMD_INTEL_EMU_REGISTERS  *Registers
   );
 
 VOID
 AmdIntelEmuInternalWriteMsrValue64 (
-  IN OUT UINT64             *Rax,
-  IN OUT AMD_EMU_REGISTERS  *Registers,
-  IN     UINT64             Value
+  IN OUT UINT64                   *Rax,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers,
+  IN     UINT64                   Value
   );
 
 /**
