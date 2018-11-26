@@ -1,5 +1,8 @@
 #include <Base.h>
 
+#include <Protocol/DebugSupport.h>
+
+#include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 
 #include "../AmdIntelEmu.h"
@@ -84,6 +87,117 @@ InternalRaiseRip (
   }
 }
 
+STATIC
+VOID
+InternalHandleEvents (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  )
+{
+  STATIC CONST UINT8 ExceptionPriorities[] =
+    { 18, 1, 2, 32, 1, 13, 14, 6, 7, 13, 0, 10, 11, 12, 13, 14, 16, 17, 19 };
+
+  UINTN Index;
+  UINT8 Priority;
+
+  ASSERT (Vmcb != NULL);
+
+  if (Vmcb->EXITINTINFO.Bits.V != 0) {
+    if (Vmcb->EVENTINJ.Bits.V == 0) {
+      CopyMem (
+        &Vmcb->EVENTINJ,
+        &Vmcb->EXITINTINFO,
+        sizeof (Vmcb->EVENTINJ)
+        );
+      return;
+    }
+    
+    if ((Vmcb->EVENTINJ.Bits.TYPE    == AmdVmcbException)
+     && (Vmcb->EXITINTINFO.Bits.TYPE == AmdVmcbException)) {
+      //
+      // Combine into #DF if necessary.
+      //
+      switch (Vmcb->EXITINTINFO.Bits.VECTOR) {
+        case EXCEPT_IA32_DIVIDE_ERROR:
+        case EXCEPT_IA32_INVALID_TSS:
+        case EXCEPT_IA32_SEG_NOT_PRESENT:
+        case EXCEPT_IA32_STACK_FAULT:
+        case EXCEPT_IA32_GP_FAULT:
+        {
+          switch (Vmcb->EVENTINJ.Bits.VECTOR) {
+            case EXCEPT_IA32_INVALID_TSS:
+            case EXCEPT_IA32_SEG_NOT_PRESENT:
+            case EXCEPT_IA32_STACK_FAULT:
+            case EXCEPT_IA32_GP_FAULT:
+            {
+              AmdIntelEmuInternalInjectDf (Vmcb);
+              return;
+            }
+
+            default:
+            {
+              break;
+            }
+          }
+        }
+
+        case EXCEPT_IA32_PAGE_FAULT:
+        {
+          switch (Vmcb->EVENTINJ.Bits.VECTOR) {
+            case EXCEPT_IA32_PAGE_FAULT:
+            case EXCEPT_IA32_INVALID_TSS:
+            case EXCEPT_IA32_SEG_NOT_PRESENT:
+            case EXCEPT_IA32_STACK_FAULT:
+            case EXCEPT_IA32_GP_FAULT:
+            {
+              AmdIntelEmuInternalInjectDf (Vmcb);
+              return;
+            }
+
+            default:
+            {
+              break;
+            }
+          }
+        }
+
+        default:
+        {
+          break;
+        }
+      }
+      //
+      // Discard the lower priority exception.
+      //
+      for (Index = 0; Index < ARRAY_SIZE (ExceptionPriorities); ++Index) {
+        Priority = ExceptionPriorities[Index];
+
+        if ((Vmcb->EVENTINJ.Bits.VECTOR == Priority)
+          || ((Priority == 32)
+           && (Vmcb->EVENTINJ.Bits.VECTOR > 32)
+           && (Vmcb->EVENTINJ.Bits.VECTOR <= 255))) {
+          break;
+        }
+
+        if ((Vmcb->EXITINTINFO.Bits.VECTOR == Priority)
+          || ((Priority == 32)
+           && (Vmcb->EXITINTINFO.Bits.VECTOR > 32)
+           && (Vmcb->EXITINTINFO.Bits.VECTOR <= 255))) {
+          CopyMem (
+            &Vmcb->EVENTINJ,
+            &Vmcb->EXITINTINFO,
+            sizeof (Vmcb->EVENTINJ)
+            );
+          break;
+        }
+      }
+
+      return;
+    }
+
+    // TODO: Implement queue.
+  }
+}
+
 VOID
 EFIAPI
 AmdIntelEmuInternalInterceptionHandler (
@@ -151,11 +265,5 @@ AmdIntelEmuInternalInterceptionHandler (
     }
   }
 
-  if (Vmcb->EXITINTINFO.Bits.V != 0) {
-    if (Vmcb->EVENTINJ.Bits.V == 0) {
-      Vmcb->EVENTINJ = Vmcb->EXITINTINFO;
-    } else {
-      // TODO: Implement.
-    }
-  }
+  InternalHandleEvents (Vmcb);
 }

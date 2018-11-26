@@ -605,6 +605,11 @@ AmdIntelEmuInternalInjectUd (
   );
 
 VOID
+AmdIntelEmuInternalInjectDf (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  );
+
+VOID
 AmdIntelEmuInternalInjectGp (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
   IN     UINT8                  ErrorCode
