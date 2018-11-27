@@ -22,6 +22,7 @@ typedef struct {
   AMD_VMCB_CONTROL_AREA *GuestVmcb;
   AMD_VMCB_CONTROL_AREA *HostVmcb;
   VOID                  *HostStack;
+  UINT64                TscStamp;
 } AMD_INTEL_EMU_THREAD_PRIVATE;
 
 typedef struct {
@@ -392,8 +393,16 @@ InternalVirtualizeAp (
   IN OUT VOID  *Buffer
   )
 {
+  AMD_INTEL_EMU_THREAD_PRIVATE *ThreadPrivate;
+
   ASSERT (Buffer != NULL);
-  InternalLaunchVmEnvironment ((AMD_INTEL_EMU_THREAD_PRIVATE *)Buffer);
+
+  ThreadPrivate = (AMD_INTEL_EMU_THREAD_PRIVATE *)Buffer;
+  //
+  // Sync AP TSC stamp counter with the BSP's.
+  //
+  AsmWriteMsr64 (MSR_IA32_TIME_STAMP_COUNTER, ThreadPrivate->TscStamp);
+  InternalLaunchVmEnvironment (ThreadPrivate);
 }
 
 STATIC
@@ -559,6 +568,7 @@ AmdEmuVirtualizeSystem (
     ThreadPrivate.GuestVmcb = GuestVmcb;
     ThreadPrivate.HostVmcb  = GET_PAGE (HostVmcbs, NumFinished);
     ThreadPrivate.HostStack = GET_PAGE (HostStacks, NumFinished);
+    ThreadPrivate.TscStamp  = AsmReadTsc ();
     Status = Private.MpServices->StartupThisAP (
                                    Private.MpServices,
                                    InternalVirtualizeAp,
