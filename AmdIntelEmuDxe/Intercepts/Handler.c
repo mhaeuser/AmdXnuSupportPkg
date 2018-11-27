@@ -62,7 +62,7 @@ AmdIntelEmuInternalGetRipInstruction (
 
 STATIC
 VOID
-InternalRaiseRip (
+InternalRaiseRipNonJmp (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   )
 {
@@ -256,7 +256,7 @@ AmdIntelEmuInternalInterceptionHandler (
     case VMEXIT_CPUID:
     {
       AmdEmuInterceptCpuid (SaveState, Registers);
-      InternalRaiseRip (Vmcb);
+      InternalRaiseRipNonJmp (Vmcb);
       break;
     }
 
@@ -269,7 +269,7 @@ AmdIntelEmuInternalInterceptionHandler (
         AmdIntelEmuInternalInterceptWrmsr (SaveState, Registers);
       }
 
-      InternalRaiseRip (Vmcb);
+      InternalRaiseRipNonJmp (Vmcb);
 
       break;
     }
