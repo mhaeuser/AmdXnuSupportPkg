@@ -96,18 +96,18 @@ InternalHandleEvents (
   STATIC CONST UINT8 ExceptionPriorities[] =
     { 18, 1, 2, 32, 1, 13, 14, 6, 7, 13, 0, 10, 11, 12, 13, 14, 16, 17, 19 };
 
-  UINTN Index;
-  UINT8 Priority;
+  UINTN          Index;
+  UINT8          Priority;
+  AMD_VMCB_EVENT QueueEvent;
 
   ASSERT (Vmcb != NULL);
-
-  if (Vmcb->EXITINTINFO.Bits.V != 0) {
+  //
+  // Software Interrupts are discarded.
+  //
+  if ((Vmcb->EXITINTINFO.Bits.V != 0)
+   && (Vmcb->EXITINTINFO.Bits.TYPE != AmdVmcbSoftwareInterrupt)) {
     if (Vmcb->EVENTINJ.Bits.V == 0) {
-      CopyMem (
-        &Vmcb->EVENTINJ,
-        &Vmcb->EXITINTINFO,
-        sizeof (Vmcb->EVENTINJ)
-        );
+      CopyMem (&Vmcb->EVENTINJ, &Vmcb->EXITINTINFO, sizeof (Vmcb->EVENTINJ));
       return;
     }
     
@@ -165,33 +165,59 @@ InternalHandleEvents (
           break;
         }
       }
+    }
+    //
+    // Software Interrupts are discarded as they are supposed to be reinvoked
+    // when returning to the faulting instruction.  Queue the Software
+    // Interrupt to be executed after the VMEXIT interrupt.
+    //
+    if (Vmcb->EVENTINJ.Bits.TYPE == AmdVmcbSoftwareInterrupt) {
+      CopyMem (&QueueEvent, &Vmcb->EVENTINJ, sizeof (QueueEvent));
+    } else {
       //
-      // Discard the lower priority exception.
+      // Inject the higher priority event and either discard or queue the lower
+      // priority event based on source.
       //
       for (Index = 0; Index < ARRAY_SIZE (ExceptionPriorities); ++Index) {
         Priority = ExceptionPriorities[Index];
 
         if ((Vmcb->EVENTINJ.Bits.VECTOR == Priority)
-          || ((Priority == 32)
-           && (Vmcb->EVENTINJ.Bits.VECTOR > 32)
-           && (Vmcb->EVENTINJ.Bits.VECTOR <= 255))) {
+         || ((Priority == 32)
+          && (Vmcb->EVENTINJ.Bits.VECTOR > 32)
+          && (Vmcb->EVENTINJ.Bits.VECTOR <= 255))) {
+          //
+          // Discard internal events.
+          //
+          if (Vmcb->EXITINTINFO.Bits.TYPE == AmdVmcbException) {
+            return;
+          }
+
+          CopyMem (&QueueEvent, &Vmcb->EXITINTINFO, sizeof (QueueEvent));
+
           break;
         }
 
         if ((Vmcb->EXITINTINFO.Bits.VECTOR == Priority)
-          || ((Priority == 32)
-           && (Vmcb->EXITINTINFO.Bits.VECTOR > 32)
-           && (Vmcb->EXITINTINFO.Bits.VECTOR <= 255))) {
+         || ((Priority == 32)
+          && (Vmcb->EXITINTINFO.Bits.VECTOR > 32)
+          && (Vmcb->EXITINTINFO.Bits.VECTOR <= 255))) {
           CopyMem (
             &Vmcb->EVENTINJ,
             &Vmcb->EXITINTINFO,
             sizeof (Vmcb->EVENTINJ)
             );
+          //
+          // Discard internal events.
+          //
+          if (Vmcb->EVENTINJ.Bits.TYPE == AmdVmcbException) {
+            return;
+          }
+
+          CopyMem (&QueueEvent, &Vmcb->EVENTINJ, sizeof (QueueEvent));
+
           break;
         }
       }
-
-      return;
     }
 
     // TODO: Implement queue.
