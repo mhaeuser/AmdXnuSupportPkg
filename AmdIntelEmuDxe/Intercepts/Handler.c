@@ -38,19 +38,15 @@ AmdIntelEmuInternalExceptionDebug (
 
 VOID
 AmdIntelEmuInternalGetRipInstruction (
-  IN  CONST AMD_VMCB_CONTROL_AREA  *Vmcb,
-  OUT hde64s                       *Instruction
+  IN  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  OUT hde64s                                 *Instruction
   )
 {
-  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
-  UINTN                                 Address;
-  IA32_SEGMENT_ATTRIBUTES               SegAttrib;
+  UINTN                   Address;
+  IA32_SEGMENT_ATTRIBUTES SegAttrib;
 
-  ASSERT (Vmcb != NULL);
-  ASSERT (Instruction != NULL);
-
-  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
   ASSERT (SaveState != NULL);
+  ASSERT (Instruction != NULL);
 
   Address = SaveState->RIP;
   //
@@ -81,7 +77,7 @@ InternalRaiseRip (
   if (mAmdIntelEmuInternalNrip) {
     SaveState->RIP = Vmcb->nRIP;
   } else {
-    AmdIntelEmuInternalGetRipInstruction (Vmcb, &Instruction);
+    AmdIntelEmuInternalGetRipInstruction (SaveState, &Instruction);
     ASSERT ((Instruction.flags & F_ERROR) != 0);
     SaveState->RIP += Instruction.len;
   }
