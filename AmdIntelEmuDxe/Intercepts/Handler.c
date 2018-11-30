@@ -206,10 +206,20 @@ InternalHandleEvents (
           // Discard internal events.
           //
           if (Vmcb->EVENTINJ.Bits.TYPE == AmdVmcbException) {
+            CopyMem (
+              &Vmcb->EVENTINJ,
+              &Vmcb->EXITINTINFO,
+              sizeof (Vmcb->EVENTINJ)
+              );
             return;
           }
 
           CopyMem (&QueueEvent, &Vmcb->EVENTINJ, sizeof (QueueEvent));
+          CopyMem (
+            &Vmcb->EVENTINJ,
+            &Vmcb->EXITINTINFO,
+            sizeof (Vmcb->EVENTINJ)
+            );
 
           break;
         }
