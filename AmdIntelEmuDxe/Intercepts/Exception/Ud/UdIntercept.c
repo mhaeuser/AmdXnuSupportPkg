@@ -33,6 +33,22 @@ AmdIntelEmuInternalInjectUd (
 }
 
 VOID
+AmdIntelEmuInternalInjectDf (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  )
+{
+  ASSERT (Vmcb != NULL);
+  //
+  // Even injections are not cached.
+  //
+  Vmcb->EVENTINJ.Bits.VECTOR    = EXCEPT_IA32_DOUBLE_FAULT;
+  Vmcb->EVENTINJ.Bits.TYPE      = AmdVmcbException;
+  Vmcb->EVENTINJ.Bits.V         = 1;
+  Vmcb->EVENTINJ.Bits.EV        = 1;
+  Vmcb->EVENTINJ.Bits.ERRORCODE = 0;
+}
+
+VOID
 AmdIntelEmuInternalInjectGp (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
   IN     UINT8                  ErrorCode
