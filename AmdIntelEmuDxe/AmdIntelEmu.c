@@ -81,26 +81,19 @@ InternalIsSvmAvailable (
   if (ExtendedCpuSigEcx.Bits.SVM == 0) {
     return FALSE;
   }
+
+  AsmCpuid (
+    CPUID_AMD_SVM_FEATURE_IDENTIFICATION,
+    NULL,
+    NULL,
+    NULL,
+    &SvmFeatureIdEdx.Uint32
+    );
   //
   // Disable SVMDIS if the register is unlocked.
   //
   VmCrRegister.Uint64 = AsmReadMsr64 (MSR_VM_CR);
   if (VmCrRegister.Bits.SVMDIS != 0) {
-    AsmCpuid (
-      CPUID_AMD_SVM_FEATURE_IDENTIFICATION,
-      NULL,
-      NULL,
-      NULL,
-      &SvmFeatureIdEdx.Uint32
-      );
-
-    if (SvmFeatureIdEdx.Bits.NRIPS != 0) {
-      mAmdIntelEmuInternalNrip = TRUE;
-    }
-
-    if (SvmFeatureIdEdx.Bits.NP != 0) {
-      mAmdIntelEmuInternalNp = TRUE;
-    }
     //
     // SVMDIS is read-only when locking is unsupported.
     //
@@ -114,6 +107,16 @@ InternalIsSvmAvailable (
     } else {
       return FALSE;
     }
+  }
+  //
+  // Cache the used AMD SVM capabilities.
+  //
+  if (SvmFeatureIdEdx.Bits.NRIPS != 0) {
+    mAmdIntelEmuInternalNrip = TRUE;
+  }
+
+  if (SvmFeatureIdEdx.Bits.NP != 0) {
+    mAmdIntelEmuInternalNp = TRUE;
   }
 
   return TRUE;
