@@ -229,6 +229,7 @@ enum {
   VMEXIT_EXCP_DB = 0x41,
   VMEXIT_EXCP_UD = 0x46,
   VMEXIT_CPUID   = 0x72,
+  VMEXIT_IRET    = 0x74,
   VMEXIT_MSR     = 0x7C,
   VMEXIT_VMRUN   = 0x80
 };
@@ -514,6 +515,7 @@ struct AMD_INTEL_EMU_THREAD_CONTEXT {
   // iret interception.
   //
   BOOLEAN                          IretTf;
+  AMD_VMCB_EVENT                   QueueEvent;
 };
 
 VOID
@@ -614,6 +616,12 @@ AmdIntelEmuInternalInjectGp (
 AMD_INTEL_EMU_THREAD_CONTEXT *
 AmdIntelEmuInternalGetThreadContext (
   IN CONST AMD_VMCB_CONTROL_AREA  *Vmcb
+  );
+
+VOID
+AmdIntelEmuInternalQueueEvent (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN     CONST AMD_VMCB_EVENT   *Event
   );
 
 extern BOOLEAN mAmdIntelEmuInternalNrip;

@@ -32,6 +32,11 @@ AmdIntelEmuInternalExceptionUd (
   );
 
 VOID
+AmdIntelEmuInternalExceptionIret (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  );
+
+VOID
 AmdIntelEmuInternalExceptionDebug (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   );
@@ -226,7 +231,7 @@ InternalHandleEvents (
       }
     }
 
-    // TODO: Implement queue.
+    AmdIntelEmuInternalQueueEvent (Vmcb, &QueueEvent);
   }
 }
 
@@ -254,6 +259,12 @@ AmdIntelEmuInternalInterceptionHandler (
     case VMEXIT_EXCP_UD:
     {
       AmdIntelEmuInternalExceptionUd (Vmcb, Registers);
+      break;
+    }
+
+    case VMEXIT_IRET:
+    {
+      AmdIntelEmuInternalExceptionIret (Vmcb);
       break;
     }
     
