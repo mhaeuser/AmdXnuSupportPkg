@@ -42,6 +42,11 @@ AmdIntelEmuInternalExceptionDebug (
   );
 
 VOID
+AmdIntelEmuInternalExceptionNpf (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
+  );
+
+VOID
 AmdIntelEmuInternalGetRipInstruction (
   IN  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
   OUT hde64s                                 *Instruction
@@ -271,6 +276,12 @@ AmdIntelEmuInternalInterceptionHandler (
     case VMEXIT_EXCP_DB:
     {
       AmdIntelEmuInternalExceptionDebug (Vmcb);
+      break;
+    }
+
+    case VMEXIT_NPF:
+    {
+      AmdIntelEmuInternalExceptionNpf (Vmcb);
       break;
     }
 

@@ -196,7 +196,7 @@ Split2MPageTo4K (
     //
     // Page is not present by default.
     //
-    if (!SplitUnmapPage (Context, PhysicalAddress4K, SIZE_4KB)) {
+    if (!SplitUnmapPage (Context, PhysicalAddress4K, SIZE_4KB, PageTableEntry)) {
       PageTableEntry->Bits.Present = 1;
     }
   }
@@ -233,7 +233,7 @@ Split1GPageTo2M (
 
   PhysicalAddress2M = PhysicalAddress;
   for (IndexOfPageDirectoryEntries = 0; IndexOfPageDirectoryEntries < 512; IndexOfPageDirectoryEntries++, PageDirectoryEntry++, PhysicalAddress2M += SIZE_2MB) {
-    if (SplitUnmapPage (Context, PhysicalAddress2M, SIZE_2MB)) {
+    if (SplitUnmapPage (Context, PhysicalAddress2M, SIZE_2MB, NULL)) {
       //
       // Need to split this 2M page that covers NULL or stack range.
       //
@@ -527,7 +527,7 @@ CreateIdentityMappingPageTables (
       PageDirectory1GEntry = (VOID *)PageDirectoryPointerEntry;
 
       for (IndexOfPageDirectoryEntries = 0; IndexOfPageDirectoryEntries < 512; IndexOfPageDirectoryEntries++, PageDirectory1GEntry++, PageAddress += SIZE_1GB) {
-        if (SplitUnmapPage (Context, PageAddress, SIZE_1GB)) {
+        if (SplitUnmapPage (Context, PageAddress, SIZE_1GB, NULL)) {
           Split1GPageTo2M (Context, SplitUnmapPage, PageAddress, (UINT64 *)PageDirectory1GEntry);
         } else {
           //
@@ -558,7 +558,7 @@ CreateIdentityMappingPageTables (
         PageDirectoryPointerEntry->Bits.Present = 1;
 
         for (IndexOfPageDirectoryEntries = 0; IndexOfPageDirectoryEntries < 512; IndexOfPageDirectoryEntries++, PageDirectoryEntry++, PageAddress += SIZE_2MB) {
-          if (SplitUnmapPage (Context, PageAddress, SIZE_2MB)) {
+          if (SplitUnmapPage (Context, PageAddress, SIZE_2MB, NULL)) {
             //
             // Need to split this 2M page that covers NULL or stack range.
             //

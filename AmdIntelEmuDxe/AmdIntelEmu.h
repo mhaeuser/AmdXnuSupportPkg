@@ -226,12 +226,13 @@ typedef union {
 } IA32_SEGMENT_ATTRIBUTES;
 
 enum {
-  VMEXIT_EXCP_DB = 0x41,
-  VMEXIT_EXCP_UD = 0x46,
-  VMEXIT_CPUID   = 0x72,
-  VMEXIT_IRET    = 0x74,
-  VMEXIT_MSR     = 0x7C,
-  VMEXIT_VMRUN   = 0x80
+  VMEXIT_EXCP_DB = 0x0041,
+  VMEXIT_EXCP_UD = 0x0046,
+  VMEXIT_CPUID   = 0x0072,
+  VMEXIT_IRET    = 0x0074,
+  VMEXIT_MSR     = 0x007C,
+  VMEXIT_VMRUN   = 0x0080,
+  VMEXIT_NPF     = 0x0400
 };
 
 #define AMD_VMCB_EXCEPTION_UD  BIT6
@@ -518,6 +519,18 @@ struct AMD_INTEL_EMU_THREAD_CONTEXT {
   AMD_VMCB_EVENT                   QueueEvent;
 };
 
+typedef
+UINT64
+(*AMD_INTEL_EMU_GET_MMIO_PAGE) (
+  IN UINT64  Address
+  );
+
+typedef struct {
+  UINT64                      Address;
+  AMD_INTEL_EMU_GET_MMIO_PAGE GetPage;
+  PAGE_TABLE_4K_ENTRY         *Pte;
+} AMD_INTEL_EMU_MMIO_INFO;
+
 VOID
 EFIAPI
 AmdIntelEmuInternalEnableVm (
@@ -560,9 +573,10 @@ AmdIntelEmuInternalWriteMsrValue64 (
   The function will check if page table entry should be splitted to smaller
   granularity to unmap.
 
-  @param[in] Context  The function context.
-  @param[in] Address  Physical memory address.
-  @param[in] Size     Size of the given physical memory.
+  @param[in] Context           The function context.
+  @param[in] Address           Physical memory address.
+  @param[in] Size              Size of the given physical memory.
+  @param[in] PageTableEntry4K  4K PTE if applicable.
 
   @retval TRUE   Page table should be split to unmap.
   @retval FALSE  Page table should not be split to unmap.
@@ -570,9 +584,10 @@ AmdIntelEmuInternalWriteMsrValue64 (
 typedef
 BOOLEAN
 (*AMD_INTEL_EMU_UNMAP_SPLIT_PAGE) (
-  IN CONST VOID        *Context,
-  IN PHYSICAL_ADDRESS  Address,
-  IN UINTN             Size
+  IN CONST VOID           *Context,
+  IN PHYSICAL_ADDRESS     Address,
+  IN UINTN                Size,
+  IN PAGE_TABLE_4K_ENTRY  *PageTableEntry4K  OPTIONAL
   );
 
 /**
@@ -624,7 +639,15 @@ AmdIntelEmuInternalQueueEvent (
   IN     CONST AMD_VMCB_EVENT   *Event
   );
 
+VOID
+AmdIntelEmuInternalMmioLapicSetPage (
+  IN VOID  *Page
+  );
+
 extern BOOLEAN mAmdIntelEmuInternalNrip;
 extern BOOLEAN mAmdIntelEmuInternalNp;
+
+extern AMD_INTEL_EMU_MMIO_INFO mAmdIntelEmuInternalMmioInfo[];
+extern CONST UINTN             mAmdIntelEmuInternalNumMmioInfo;
 
 #endif // AMD_INTEL_EMU_H_

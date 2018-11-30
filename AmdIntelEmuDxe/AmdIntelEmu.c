@@ -410,23 +410,14 @@ InternalVirtualizeAp (
 
 STATIC
 BOOLEAN
-InternalSplitAndUnmapPage (
-  IN CONST VOID        *Context,
-  IN PHYSICAL_ADDRESS  Address,
-  IN UINTN             Size
+InternalSplitAndUnmapPageWorker (
+  IN CONST AMD_INTEL_EMU_PRIVATE *Private,
+  IN PHYSICAL_ADDRESS            Address,
+  IN UINTN                       Size,
+  IN UINTN                       Start,
+  IN UINTN                       End
   )
 {
-  CONST AMD_INTEL_EMU_PRIVATE *Private;
-  UINTN                       Start;
-  UINTN                       End;
-
-  ASSERT (Context != NULL);
-  ASSERT (Size > 0);
-
-  Private = (AMD_INTEL_EMU_PRIVATE *)Context;
-  Start   = Private->Address;
-  End     = (Start + Private->Size);
-
   if (Private->Size > Size) {
     //
     // Verify the page passed is contained in the VMM data range.
@@ -451,6 +442,61 @@ InternalSplitAndUnmapPage (
 }
 
 STATIC
+BOOLEAN
+InternalSplitAndUnmapPage (
+  IN CONST VOID           *Context,
+  IN PHYSICAL_ADDRESS     Address,
+  IN UINTN                Size,
+  IN PAGE_TABLE_4K_ENTRY  *PageTableEntry4K  OPTIONAL
+  )
+{
+  BOOLEAN                     Result;
+
+  CONST AMD_INTEL_EMU_PRIVATE *Private;
+  UINTN                       Start;
+  UINTN                       End;
+  UINTN                       Index;
+  AMD_INTEL_EMU_MMIO_INFO     *MmioInfo;
+
+  ASSERT (Context != NULL);
+  ASSERT (Size > 0);
+
+  Private = (AMD_INTEL_EMU_PRIVATE *)Context;
+  Start   = Private->Address;
+  End     = (Start + Private->Size);
+
+  Result = InternalSplitAndUnmapPageWorker (
+             Private,
+             Address,
+             Size,
+             Start,
+             End
+             );
+  if (Result) {
+    return TRUE;
+  }
+
+  if (PageTableEntry4K != NULL) {
+    for (Index = 0; Index < mAmdIntelEmuInternalNumMmioInfo; ++Index) {
+      MmioInfo = &mAmdIntelEmuInternalMmioInfo[Index];
+      Result = InternalSplitAndUnmapPageWorker (
+                 Private,
+                 Address,
+                 Size,
+                 MmioInfo->Address,
+                 (MmioInfo->Address + SIZE_4KB)
+                 );
+      if (Result) {
+        MmioInfo->Pte = PageTableEntry4K;
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+STATIC
 VOID
 AmdEmuVirtualizeSystem (
   IN OUT VOID  *Memory
@@ -460,6 +506,7 @@ AmdEmuVirtualizeSystem (
   AMD_INTEL_EMU_THREAD_PRIVATE ThreadPrivate;
   VOID                         *IoPm;
   VOID                         *MsrPm;
+  VOID                         *LapicMmioPage;
   VOID                         *HostStacks;
   VOID                         *HostVmcbs;
   VOID                         *GuestVmcbs;
@@ -476,27 +523,30 @@ AmdEmuVirtualizeSystem (
 
   //
   // VMRUN is available only at CPL-0.
-  // - Assumption: UEFI always runs at CPU-0.
+  // - Assumption: UEFI always runs at CPL-0.
   //
   // Furthermore, the processor must be in protected mode
   // - This library currently only supports long mode, which implicitely is
   //   protected.
   //
 
-  MsrPm = GET_PAGE (Memory, 0);
-  IoPm  = GET_PAGE (MsrPm,  1);
+  MsrPm         = GET_PAGE (Memory, 0);
+  IoPm          = GET_PAGE (MsrPm,  1);
+  LapicMmioPage = GET_PAGE (IoPm,   3);
   //
-  // Place the stack before the VMCBs and after the Protection Maps, so if it
+  // Place the stack before the VMCBs and after the LAPIC MMIO page, so if it
   // shall overflow, it does not corrupt any critical VM information.
-  // The PMs' high memory is reserved.
+  // The LAPIC MMIO page's high memory is unused.
   //
-  HostStacks     = GET_PAGE (IoPm,       3);
-  HostVmcbs      = GET_PAGE (HostStacks, Private.NumEnabledProcessors);
-  GuestVmcbs     = GET_PAGE (HostVmcbs,  Private.NumEnabledProcessors);
-  ThreadContexts = GET_PAGE (GuestVmcbs, Private.NumEnabledProcessors);
+  HostStacks     = GET_PAGE (LapicMmioPage, 1);
+  HostVmcbs      = GET_PAGE (HostStacks,    Private.NumEnabledProcessors);
+  GuestVmcbs     = GET_PAGE (HostVmcbs,     Private.NumEnabledProcessors);
+  ThreadContexts = GET_PAGE (GuestVmcbs,    Private.NumEnabledProcessors);
 
   mInternalThreadContexts    = ThreadContexts;
   mInternalNumThreadContexts = Private.NumEnabledProcessors;
+
+  AmdIntelEmuInternalMmioLapicSetPage (LapicMmioPage);
   //
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
