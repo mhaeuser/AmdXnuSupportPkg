@@ -625,5 +625,6 @@ AmdIntelEmuInternalQueueEvent (
   );
 
 extern BOOLEAN mAmdIntelEmuInternalNrip;
+extern BOOLEAN mAmdIntelEmuInternalNp;
 
 #endif // AMD_INTEL_EMU_H_

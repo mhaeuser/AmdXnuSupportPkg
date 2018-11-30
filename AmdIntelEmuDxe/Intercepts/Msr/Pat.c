@@ -2,6 +2,7 @@
 
 #include <Register/ArchitecturalMsr.h>
 
+#include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 
 #include "../../AmdIntelEmu.h"
@@ -26,10 +27,13 @@ AmdIntelEmuInternalWrmsrPat (
                     );
   PatMsr.Bits.PA1 = PAT_WC;
   PatMsr.Bits.PA5 = PAT_WC;
-  // TODO: Write MSR for when Nested Paging is off.
-  //AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);
-  //
-  // Inform the Guest of the new PAT for when Nested Paging is used.
-  //
-  SaveState->G_PAT = PatMsr.Uint64;
+
+  if (mAmdIntelEmuInternalNp) {
+    //
+    // Inform the Guest of the new PAT for when Nested Paging is used.
+    //
+    SaveState->G_PAT = PatMsr.Uint64;
+  } else {
+    AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);
+  }
 }
