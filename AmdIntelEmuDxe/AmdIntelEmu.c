@@ -722,8 +722,9 @@ AmdEmuEntryPoint (
   // AmdEmuVirtualizeSystem() assumes this size setup.
   // Allocate at a 2 MB boundary so they will be covered by a single 2 MB Page
   // Table entry.
+  // MSR map: 1 page, IO map: 3 pages, LAPIC MMIO: 1 page, VMCBs: 2 per thread.
   //
-  NumPages  = (3 + 1 + (NumEnabledProcessors * (NUM_STACK_PAGES + 2)));
+  NumPages  = (1 + 3 + 1 + (NumEnabledProcessors * (NUM_STACK_PAGES + 2)));
   NumPages += EFI_SIZE_TO_PAGES (
                 NumEnabledProcessors * sizeof (AMD_INTEL_EMU_THREAD_CONTEXT)
                 );
