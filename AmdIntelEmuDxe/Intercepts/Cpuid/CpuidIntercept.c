@@ -63,7 +63,7 @@ AmdEmuInterceptCpuid (
   ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
 
-  CpuidIndex = BitFieldRead32 (SaveState->RAX, 0, 31);
+  CpuidIndex = (UINT32)SaveState->RAX;
 
   Ecx = (UINT32)Registers->Rcx;
 
@@ -104,8 +104,8 @@ AmdEmuInterceptCpuid (
     }
   }
 
-  SaveState->RAX = BitFieldWrite32 (SaveState->RAX, 0, 31, Eax);
-  Registers->Rbx = BitFieldWrite32 (Registers->Rbx, 0, 31, Ebx);
-  Registers->Rcx = BitFieldWrite32 (Registers->Rcx, 0, 31, Ecx);
-  Registers->Rdx = BitFieldWrite32 (Registers->Rdx, 0, 31, Edx);
+  SaveState->RAX = BitFieldWrite64 (SaveState->RAX, 0, 31, Eax);
+  Registers->Rbx = BitFieldWrite64 (Registers->Rbx, 0, 31, Ebx);
+  Registers->Rcx = BitFieldWrite64 (Registers->Rcx, 0, 31, Ecx);
+  Registers->Rdx = BitFieldWrite64 (Registers->Rdx, 0, 31, Edx);
 }

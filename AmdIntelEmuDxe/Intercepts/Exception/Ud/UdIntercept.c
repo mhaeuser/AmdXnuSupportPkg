@@ -71,11 +71,16 @@ AmdIntelEmuInternalExceptionUd (
   IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   )
 {
-  hde64s Instruction;
+  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  hde64s                                Instruction;
 
   ASSERT (Vmcb != NULL);
 
-  AmdIntelEmuInternalGetRipInstruction (Vmcb, &Instruction);
+  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
+
+  AmdIntelEmuInternalGetRipInstruction (SaveState, &Instruction);
+
   if ((Instruction.flags & F_ERROR) == 0) {
     if (Instruction.opcode == 0x0F) {
       switch (Instruction.opcode2) {

@@ -3,13 +3,13 @@
 #include <Register/Amd/Cpuid.h>
 #include <Register/Msr.h>
 
+#include <Protocol/MpService.h>
+
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
-
-#include <Protocol/MpService.h>
 
 #include "AmdIntelEmu.h"
 
@@ -207,7 +207,7 @@ InternalGetDescriptorFromTable (
 STATIC
 VOID
 InternalInitializeSaveStateSelector (
-  IN  UINTN                         Selector,
+  IN  UINT16                        Selector,
   OUT AMD_VMCB_SAVE_STATE_SELECTOR  *SaveState,
   IN  CONST IA32_DESCRIPTOR         *Gdt,
   IN  CONST IA32_DESCRIPTOR         *Ldt
@@ -254,6 +254,7 @@ InternalLaunchVmEnvironment (
   IA32_DESCRIPTOR                 Idtr;
   UINTN                           Cr0;
   MSR_IA32_PAT_REGISTER           PatMsr;
+  UINT32                          Limit;
 
   ASSERT (Private != NULL);
 
@@ -302,9 +303,13 @@ InternalLaunchVmEnvironment (
   //
   AsmReadGdtr (&Gdtr);
   AsmReadIdtr (&Idtr);
-  LdtrDesc   = InternalGetDescriptorFromTable (&Gdtr, AsmReadLdtr ());
+
+  LdtrDesc = InternalGetDescriptorFromTable (&Gdtr, AsmReadLdtr ());
+  Limit    = InternalSegmentGetLimit (LdtrDesc);
+  ASSERT (Limit == (UINT16)Limit);
+
   Ldtr.Base  = InternalSegmentGetBase (LdtrDesc);
-  Ldtr.Limit = InternalSegmentGetLimit (LdtrDesc);
+  Ldtr.Limit = (UINT16)Limit;
   //
   // The following VMCB Save State members do not need to be initialized as
   // they are only used with vmsave/vmload:
@@ -663,9 +668,11 @@ InternalExitBootServices (
   AmdEmuVirtualizeSystem (Context);
 }
 
-BOOLEAN
-AmdEmuEntryPoint (
-  VOID
+EFI_STATUS
+EFIAPI
+AmdIntelEmuEntryPoint (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
   UINTN                    NumPages;
@@ -679,7 +686,7 @@ AmdEmuEntryPoint (
   EFI_EVENT                Event;
 
   if (!InternalIsSvmAvailable ()) {
-    return FALSE;
+    return EFI_UNSUPPORTED;
   }
 
   Status = gBS->LocateProtocol (
@@ -689,7 +696,7 @@ AmdEmuEntryPoint (
                   );
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
-    return FALSE;
+    return Status;
   }
 
   Status = MpServices->GetNumberOfProcessors (
@@ -699,13 +706,13 @@ AmdEmuEntryPoint (
                          );
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
-    return FALSE;
+    return Status;
   }
 
   Status = MpServices->WhoAmI (MpServices, &BspNum);
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
-    return FALSE;
+    return Status;
   }
 
   NumEnabledProcessors = NumProcessors;
@@ -730,7 +737,7 @@ AmdEmuEntryPoint (
                 );
   Memory = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
   if (Memory == NULL) {
-    return FALSE;
+    return EFI_OUT_OF_RESOURCES;
   }
 
   Memory->Address              = (UINTN)Memory;
@@ -749,8 +756,8 @@ AmdEmuEntryPoint (
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
     FreeAlignedPages (Memory, NumPages);
-    return FALSE;
+    return Status;
   }
 
-  return TRUE;
+  return EFI_SUCCESS;
 }

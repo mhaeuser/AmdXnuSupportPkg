@@ -22,8 +22,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #ifndef _VIRTUAL_MEMORY_H_
 #define _VIRTUAL_MEMORY_H_
 
-#include "../AmdIntelEmu.h"
-
 #define SYS_CODE64_SEL 0x38
 
 #pragma pack(1)
@@ -167,56 +165,5 @@ typedef union {
 #define PAGING_L4_ADDRESS_SHIFT     39
 
 #define PAGING_PML4E_NUMBER         4
-
-#define PAGE_TABLE_POOL_ALIGNMENT   BASE_2MB
-#define PAGE_TABLE_POOL_UNIT_SIZE   SIZE_2MB
-#define PAGE_TABLE_POOL_UNIT_PAGES  EFI_SIZE_TO_PAGES (PAGE_TABLE_POOL_UNIT_SIZE)
-#define PAGE_TABLE_POOL_ALIGN_MASK  \
-  (~(EFI_PHYSICAL_ADDRESS)(PAGE_TABLE_POOL_ALIGNMENT - 1))
-
-typedef struct {
-  VOID            *NextPool;
-  UINTN           Offset;
-  UINTN           FreePages;
-} PAGE_TABLE_POOL;
-
-/**
-  Split 2M page to 4K.
-
-  @param[in]      Context               The function context.
-  @param[in]      SplitUnmapPage        Function to check whether to split and unmap.
-  @param[in]      PhysicalAddress       Start physical address the 2M page covered.
-  @param[in, out] PageEntry2M           Pointer to 2M page entry.
-
-**/
-VOID
-Split2MPageTo4K (
-  IN CONST VOID                         *Context,
-  IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE     SplitUnmapPage,
-  IN EFI_PHYSICAL_ADDRESS               PhysicalAddress,
-  IN OUT UINT64                         *PageEntry2M
-  );
-
-/**
-  This API provides a way to allocate memory for page table.
-
-  This API can be called more than once to allocate memory for page tables.
-
-  Allocates the number of 4KB pages and returns a pointer to the allocated
-  buffer. The buffer returned is aligned on a 4KB boundary.
-
-  If Pages is 0, then NULL is returned.
-  If there is not enough memory remaining to satisfy the request, then NULL is
-  returned.
-
-  @param  Pages                 The number of 4 KB pages to allocate.
-
-  @return A pointer to the allocated buffer or NULL if allocation fails.
-
-**/
-VOID *
-AllocatePageTableMemory (
-  IN UINTN           Pages
-  );
 
 #endif

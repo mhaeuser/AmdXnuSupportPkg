@@ -1,9 +1,10 @@
-SECTION .text
+    DEFAULT REL
+    SECTION .text
 
-extern ASM_PFX (AmdIntelEmuInternalDisableTf)
+global ASM_PFX (AmdIntelEmuInternalDisableTf)
 ASM_PFX (AmdIntelEmuInternalDisableTf):
     pushf
     mov     rax, [rsp]
-    and     [rsp], ~0x0100
+    and     qword [rsp], ~0x0100
     popf
     retn

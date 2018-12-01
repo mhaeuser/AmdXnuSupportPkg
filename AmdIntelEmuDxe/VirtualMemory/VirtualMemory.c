@@ -48,6 +48,20 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/PcdLib.h>
 
 #include "VirtualMemory.h"
+#include "../AmdIntelEmu.h"
+
+#define PAGE_TABLE_POOL_ALIGNMENT   BASE_2MB
+#define PAGE_TABLE_POOL_UNIT_SIZE   SIZE_2MB
+#define PAGE_TABLE_POOL_UNIT_PAGES  EFI_SIZE_TO_PAGES (PAGE_TABLE_POOL_UNIT_SIZE)
+#define PAGE_TABLE_POOL_ALIGN_MASK  \
+  (~(EFI_PHYSICAL_ADDRESS)(PAGE_TABLE_POOL_ALIGNMENT - 1))
+
+typedef struct {
+  VOID            *NextPool;
+  UINTN           Offset;
+  UINTN           FreePages;
+} PAGE_TABLE_POOL;
+
 
 //
 // Global variable to keep track current available memory used as page table.
@@ -443,13 +457,11 @@ CreateIdentityMappingPageTables (
   PAGE_TABLE_1G_ENTRY                           *PageDirectory1GEntry;
 
   Page1GSupport = FALSE;
-  if (PcdGetBool(PcdUse1GPageTable)) {
-    AsmCpuid (0x80000000, &RegEax, NULL, NULL, NULL);
-    if (RegEax >= 0x80000001) {
-      AsmCpuid (0x80000001, NULL, NULL, NULL, &RegEdx);
-      if ((RegEdx & BIT26) != 0) {
-        Page1GSupport = TRUE;
-      }
+  AsmCpuid (0x80000000, &RegEax, NULL, NULL, NULL);
+  if (RegEax >= 0x80000001) {
+    AsmCpuid (0x80000001, NULL, NULL, NULL, &RegEdx);
+    if ((RegEdx & BIT26) != 0) {
+      Page1GSupport = TRUE;
     }
   }
 

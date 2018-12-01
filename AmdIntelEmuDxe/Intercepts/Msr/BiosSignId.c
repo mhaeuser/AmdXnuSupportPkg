@@ -42,6 +42,6 @@ AmdIntelEmuInternalWrmsrBiosSignId (
 
   Value = AmdIntelEmuInternalReadMsrValue64 (&SaveState->RAX, Registers);
   if (Value != 0) {
-    mMicrocodeUpdateSignature = BitFieldRead64 (Value, 32, 63);
+    mMicrocodeUpdateSignature = (UINT32)BitFieldRead64 (Value, 32, 63);
   }
 }

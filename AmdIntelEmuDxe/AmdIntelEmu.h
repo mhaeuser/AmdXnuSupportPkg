@@ -1,6 +1,8 @@
 #ifndef AMD_INTEL_EMU_H_
 #define AMD_INTEL_EMU_H_
 
+#include <Library/BaseLib.h>
+
 #include "VirtualMemory/VirtualMemory.h"
 #include "hde/hde64.h"
 
@@ -212,15 +214,15 @@ typedef union {
 
 typedef union {
   PACKED struct {
-    UINT16 Type     : 4;
-    UINT16 S        : 1;
-    UINT16 DPL      : 2;
-    UINT16 P        : 1;
-    UINT16 AVL      : 1;
-    UINT16 L        : 1;
-    UINT16 DB       : 1;
-    UINT16 G        : 1;
-    UINT16 Reserved : 4;
+    UINT32 Type     : 4;
+    UINT32 S        : 1;
+    UINT32 DPL      : 2;
+    UINT32 P        : 1;
+    UINT32 AVL      : 1;
+    UINT32 L        : 1;
+    UINT32 DB       : 1;
+    UINT32 G        : 1;
+    UINT32 Reserved : 4;
   }      Bits;
   UINT16 Uint16;
 } IA32_SEGMENT_ATTRIBUTES;
@@ -287,6 +289,7 @@ typedef union {
     UINT32 FaultGuestTlb     : 1;
   }      Bits;
   UINT32 Uint32;
+  UINT64 Uint64;
 } AMD_VMCB_EXITINFO1_NPF;
 
 typedef PACKED struct {

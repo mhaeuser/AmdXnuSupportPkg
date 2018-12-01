@@ -88,7 +88,7 @@ AmdIntelEmuInternalExceptionNpf (
   ThreadContext = AmdIntelEmuInternalGetThreadContext (Vmcb);
   ASSERT (ThreadContext != NULL);
 
-  ExitInfo1.Uint32 = Vmcb->EXITINFO1;
+  ExitInfo1.Uint64 = Vmcb->EXITINFO1;
   //
   // Sanity-check the NPF error information.
   //

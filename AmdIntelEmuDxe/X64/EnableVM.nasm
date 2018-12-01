@@ -1,15 +1,20 @@
 %define AMD_VMCB_RIP_OFFSET  (0x400 + 0x0178)
 %define AMD_VMCB_RSP_OFFSET  (0x400 + 0x01D8)
 
-SECTION .text
+extern ASM_PFX (AmdIntelEmuInternalInterceptionHandler)
 
-extern ASM_PFX (AmdIntelEmuInternalEnableVm)
+    DEFAULT REL
+    SECTION .text
+
+global ASM_PFX (AmdIntelEmuInternalEnableVm)
 ASM_PFX (AmdIntelEmuInternalEnableVm):
   ;
   ; Save the caller stack to return transparently later.
   ;
   mov     [rcx + AMD_VMCB_RSP_OFFSET], rsp
-  mov     [rcx + AMD_VMCB_RIP_OFFSET], .Return
+.ReturnRel:
+  lea     rsp, [$ + (.Return - .ReturnRel)]
+  mov     [rcx + AMD_VMCB_RIP_OFFSET], rsp
   mov     rsp, rdx     ; Set up the new host stack.
   ;
   ; Software must load RAX (EAX in 32-bit mode) with the physical address of
@@ -19,7 +24,7 @@ ASM_PFX (AmdIntelEmuInternalEnableVm):
   mov     rax, rcx
 
 .StartGuest:
-  vmrun   rax
+  vmrun
   ;
   ; Interception handling code.
   ;
@@ -36,22 +41,22 @@ ASM_PFX (AmdIntelEmuInternalEnableVm):
   push    rbx          ; non-volatile for EFIAPI, but C code may access it.
   mov     rdx, rsp     ; Pass the registers' addresses.
   sub     rsp, 0x80    ; shadow area (4 * 8 bytes) and XMM registers.
-  movaps  xmmword ptr [rsp + 0x20], xmm0
-  movaps  xmmword ptr [rsp + 0x30], xmm1
-  movaps  xmmword ptr [rsp + 0x40], xmm2
-  movaps  xmmword ptr [rsp + 0x50], xmm3
-  movaps  xmmword ptr [rsp + 0x60], xmm4
-  movaps  xmmword ptr [rsp + 0x70], xmm5
+  movaps  [rsp + 0x20], xmm0
+  movaps  [rsp + 0x30], xmm1
+  movaps  [rsp + 0x40], xmm2
+  movaps  [rsp + 0x50], xmm3
+  movaps  [rsp + 0x60], xmm4
+  movaps  [rsp + 0x70], xmm5
 
   mov     rcx, rax     ; Pass the VMCB.
   call    ASM_PFX (AmdIntelEmuInternalInterceptionHandler)
 
-  movaps  xmm5, xmmword ptr [rsp + 0x70]
-  movaps  xmm4, xmmword ptr [rsp + 0x60]
-  movaps  xmm3, xmmword ptr [rsp + 0x50]
-  movaps  xmm2, xmmword ptr [rsp + 0x40]
-  movaps  xmm1, xmmword ptr [rsp + 0x30]
-  movaps  xmm0, xmmword ptr [rsp + 0x20]
+  movaps  xmm5, [rsp + 0x70]
+  movaps  xmm4, [rsp + 0x60]
+  movaps  xmm3, [rsp + 0x50]
+  movaps  xmm2, [rsp + 0x40]
+  movaps  xmm1, [rsp + 0x30]
+  movaps  xmm0, [rsp + 0x20]
   add     rsp, 0x80
   pop     rbx
   pop     rcx

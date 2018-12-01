@@ -52,11 +52,11 @@ AmdIntelEmuInternalUdSysexit (
   if (Operand64) {
     SaveState->RSP         = Registers->Rcx;
     SaveState->RIP         = Registers->Rdx;
-    SaveState->CS.Selector = ((SysenterCs.Bits.CS + 32) | 3U);
+    SaveState->CS.Selector = (UINT16)((SysenterCs.Bits.CS + 32) | 3U);
   } else {
     SaveState->RSP         = BitFieldRead64 (Registers->Rcx, 0, 31);
     SaveState->RIP         = BitFieldRead64 (Registers->Rdx, 0, 31);
-    SaveState->CS.Selector = ((SysenterCs.Bits.CS + 16) | 3U);
+    SaveState->CS.Selector = (UINT16)((SysenterCs.Bits.CS + 16) | 3U);
   }
 
   SaveState->CS.Base = 0;

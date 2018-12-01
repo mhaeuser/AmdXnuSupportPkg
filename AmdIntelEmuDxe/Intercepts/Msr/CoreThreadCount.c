@@ -29,7 +29,7 @@ AmdIntelEmuInternalRdmsrCoreThreadCount (
     &CoreCountEcx.Uint32,
     NULL
     );
-  ThreadCount = (CoreCountEcx.Bits.NC + 1);
+  ThreadCount = (UINT16)(CoreCountEcx.Bits.NC + 1);
 
   AsmCpuid (
     CPUID_AMD_COMPUTE_UNIT_IDENTIFIERS,

@@ -183,7 +183,7 @@ AmdIntelEmuInternalInterceptRdmsr (
   UINTN                             Index;
   CONST INTERNAL_MSR_INTERCEPT_INFO *MsrIntercept;
 
-  MsrIndex = BitFieldRead32 (Registers->Rcx, 0, 31);
+  MsrIndex = (UINT32)Registers->Rcx;
 
   for (Index = 0; Index < ARRAY_SIZE (mMsrInterceptMap); ++Index) {
     MsrIntercept = &mMsrInterceptMap[Index];
@@ -213,7 +213,7 @@ AmdIntelEmuInternalInterceptWrmsr (
   UINTN                             Index;
   CONST INTERNAL_MSR_INTERCEPT_INFO *MsrIntercept;
 
-  MsrIndex = BitFieldRead32 (Registers->Rcx, 0, 31);
+  MsrIndex = (UINT32)Registers->Rcx;
 
   for (Index = 0; Index < ARRAY_SIZE (mMsrInterceptMap); ++Index) {
     MsrIntercept = &mMsrInterceptMap[Index];
