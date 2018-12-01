@@ -389,4 +389,6 @@ AmdIntelEmuInternalCpuidLeaf2 (
                L3Size,
                L3LineSize
                );
+  Bytes[2] = _NULL_;
+  Bytes[3] = _NULL_;
 }
