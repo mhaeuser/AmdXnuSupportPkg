@@ -269,7 +269,7 @@ typedef union {
   PACKED struct {
     UINT32 VECTOR    : 8;
     UINT32 TYPE      : 3;
-    UINT32 EV        : 2;
+    UINT32 EV        : 1;
     UINT32 Reserved  : 19;
     UINT32 V         : 1;
     UINT32 ERRORCODE : 32;
@@ -376,12 +376,12 @@ typedef PACKED struct {
   UINT32 Reserved6                  : 5;
   UINT32 AvicEnable                 : 1;
   UINT32 V_INTR_VECTOR              : 8;
-  UINT32 Reserved7                  : 14;
+  UINT32 Reserved7                  : 24;
 
   UINT32 INTERRUPT_SHADOW           : 1;
   UINT32 GUEST_INTERRUPT_MASK       : 1;
   UINT32 Reserved8                  : 30;
-  UINT32 Reserved9                  : 32;
+  UINT32 Reserved9;
 
   UINT64 EXITCODE;
   UINT64 EXITINFO1;
@@ -392,7 +392,7 @@ typedef PACKED struct {
   UINT32 EnableSev                  : 1;
   UINT32 EnableSevEs                : 1;
   UINT32 Reserved10                 : 29;
-  UINT32 Reserved11                 : 32;
+  UINT32 Reserved11;
 
   UINT64 AVIC_APIC_BASE; // The upper 12 bits must be 0.
   UINT64 Ghcb;
@@ -402,18 +402,15 @@ typedef PACKED struct {
   UINT32 LBR_VIRTUALIZATION_ENABLE  : 1;
   UINT32 VirtualizedVmsaveVmload    : 1;
   UINT32 Reserved12                 : 30;
-  UINT32 Reserved13                 : 32;
+  UINT32 Reserved13;
 
   AMD_VMCB_CLEAN_FIELD VmcbCleanBits;
   UINT32 Reserved14;
 
   UINT64 nRIP;
 
-  UINT32 NumberOfBytesDispatched    : 8;
-  UINT32 GuestInstructionBytes1     : 32;
-  UINT32 GuestInstructionBytes2     : 32;
-  UINT32 GuestInstructionBytes3     : 32;
-  UINT32 GuestInstructionBytes4     : 24;
+  UINT8  NumberOfBytesDispatched;
+  UINT8  GuestInstructionBytes[15];
 
   UINT64 AVIC_APIC_BACKING_PAGE; // The upper and lower 12 bits must be 0.
 
@@ -431,7 +428,7 @@ typedef PACKED struct {
 
   UINT64 VmcbSaveState; // The upper and lower 12 bits must be 0.
 
-  UINT8  Reserved17[768];
+  UINT8  Reserved17[752];
 } AMD_VMCB_CONTROL_AREA;
 
 VERIFY_SIZE_OF (AMD_VMCB_CONTROL_AREA, 0x400);
