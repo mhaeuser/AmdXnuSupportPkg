@@ -21,7 +21,7 @@ typedef enum {
 
 typedef enum {
   NA,              ///< Not Applicable
-  FULLY,           ///< Fully-associative  
+  FULLY,           ///< Fully-associative
   TRACE,           ///< Trace Cache (P4 only)
   INST,            ///< Instruction TLB
   DATA,            ///< Data TLB
@@ -48,8 +48,120 @@ typedef struct {
   UINT16 Entries;  ///< number of TLB entries or linesize
 } CPUID_CACHE_DESCRIPTOR;
 
+///
+/// These multipliers are used to encode 1*K .. 64*M in a 16 bit size field
+///
+#define K  1
+#define M  1024
+
+// TODO: Rework the list with the map from the Intel SDM.
 STATIC CONST CPUID_CACHE_DESCRIPTOR mCacheDescriptorMap[] = {
-  // TODO: populate the list with the map from the Intel SDM.
+  //  -------------------------------------------------------
+//  value  type  level    ways  size  entries
+//  -------------------------------------------------------
+  { 0x00,  _NULL_,  NA,    NA,  NA,  NA  },
+  { 0x01,  TLB,  INST,    4,  SMALL,  32  },  
+  { 0x02,  TLB,  INST,    FULLY,  LARGE,  2   },  
+  { 0x03,  TLB,  DATA,    4,  SMALL,  64  },  
+  { 0x04,  TLB,  DATA,    4,  LARGE,  8   },  
+  { 0x05,  TLB,  DATA1,    4,  LARGE,  32  },  
+  { 0x06,  CACHE,  L1_INST,  4,  8*K,  32  },
+  { 0x08,  CACHE,  L1_INST,  4,  16*K,  32  },
+  { 0x09,  CACHE,  L1_INST,  4,  32*K,  64  },
+  { 0x0A,  CACHE,  L1_DATA,  2,  8*K,  32  },
+  { 0x0B,  TLB,  INST,    4,  LARGE,  4   },  
+  { 0x0C,  CACHE,  L1_DATA,  4,  16*K,  32  },
+  { 0x0D,  CACHE,  L1_DATA,  4,  16*K,  64  },
+  { 0x0E,  CACHE,  L1_DATA,  6,  24*K,  64  },
+  { 0x21,  CACHE,  L2,    8,  256*K,  64  },
+  { 0x22,  CACHE,  L3_2LINESECTOR,  4,  512*K,  64  },
+  { 0x23,  CACHE,  L3_2LINESECTOR, 8,  1*M,  64  },
+  { 0x25,  CACHE,  L3_2LINESECTOR,  8,  2*M,  64  },
+  { 0x29,  CACHE,  L3_2LINESECTOR, 8,  4*M,  64  },
+  { 0x2C,  CACHE,  L1_DATA,  8,  32*K,  64  },
+  { 0x30,  CACHE,  L1_INST,  8,  32*K,  64  },
+  { 0x40,  CACHE,  L2,    NA,  0,  NA  },
+  { 0x41,  CACHE,  L2,    4,  128*K,  32  },
+  { 0x42,  CACHE,  L2,    4,  256*K,  32  },
+  { 0x43,  CACHE,  L2,    4,  512*K,  32  },
+  { 0x44,  CACHE,  L2,    4,  1*M,  32  },
+  { 0x45,  CACHE,  L2,    4,  2*M,  32  },
+  { 0x46,  CACHE,  L3,    4,  4*M,  64  },
+  { 0x47,  CACHE,  L3,    8,  8*M,  64  },
+  { 0x48,  CACHE,  L2,    12,   3*M,  64  },
+  { 0x49,  CACHE,  L2,    16,  4*M,  64  },
+  { 0x4A,  CACHE,  L3,    12,   6*M,  64  },
+  { 0x4B,  CACHE,  L3,    16,  8*M,  64  },
+  { 0x4C,  CACHE,  L3,    12,   12*M,  64  },
+  { 0x4D,  CACHE,  L3,    16,  16*M,  64  },
+  { 0x4E,  CACHE,  L2,    24,  6*M,  64  },
+  { 0x4F,  TLB,  INST,    NA,  SMALL,  32  },  
+  { 0x50,  TLB,  INST,    NA,  BOTH,  64  },  
+  { 0x51,  TLB,  INST,    NA,  BOTH,  128 },  
+  { 0x52,  TLB,  INST,    NA,  BOTH,  256 },  
+  { 0x55,  TLB,  INST,    FULLY,  BOTH,  7   },  
+  { 0x56,  TLB,  DATA0,    4,  LARGE,  16  },  
+  { 0x57,  TLB,  DATA0,    4,  SMALL,  16  },  
+  { 0x59,  TLB,  DATA0,    FULLY,  SMALL,  16  },  
+  { 0x5A,  TLB,  DATA0,    4,  LARGE,  32  },  
+  { 0x5B,  TLB,  DATA,    NA,  BOTH,  64  },  
+  { 0x5C,  TLB,  DATA,    NA,  BOTH,  128 },  
+  { 0x5D,  TLB,  DATA,    NA,  BOTH,  256 },  
+  { 0x60,  CACHE,  L1,    16*K,  8,  64  },
+  { 0x61,  CACHE,  L1,    4,  8*K,  64  },
+  { 0x62,  CACHE,  L1,    4,  16*K,  64  },
+  { 0x63,  CACHE,  L1,    4,  32*K,  64  },
+  { 0x70,  CACHE,  TRACE,    8,  12*K,  NA  },
+  { 0x71,  CACHE,  TRACE,    8,  16*K,  NA  },
+  { 0x72,  CACHE,  TRACE,    8,  32*K,  NA  },
+  { 0x76,  TLB,  INST,    NA,  BOTH,  8   },
+  { 0x78,  CACHE,  L2,    4,  1*M,  64  },
+  { 0x79,  CACHE,  L2_2LINESECTOR,  8,  128*K,  64  },
+  { 0x7A,  CACHE,  L2_2LINESECTOR,  8,  256*K,  64  },
+  { 0x7B,  CACHE,  L2_2LINESECTOR,  8,  512*K,  64  },
+  { 0x7C,  CACHE,  L2_2LINESECTOR,  8,  1*M,  64  },
+  { 0x7D,  CACHE,  L2,    8,  2*M,  64  },
+  { 0x7F,  CACHE,  L2,    2,  512*K,  64  },
+  { 0x80,  CACHE,  L2,    8,  512*K,  64  },
+  { 0x82,  CACHE,  L2,    8,  256*K,  32  },
+  { 0x83,  CACHE,  L2,    8,  512*K,  32  },
+  { 0x84,  CACHE,  L2,    8,  1*M,  32  },
+  { 0x85,  CACHE,  L2,    8,  2*M,  32  },
+  { 0x86,  CACHE,  L2,    4,  512*K,  64  },
+  { 0x87,  CACHE,  L2,    8,  1*M,  64  },
+  { 0xB0,  TLB,  INST,    4,  SMALL,  128 },  
+  { 0xB1,  TLB,  INST,    4,  LARGE,  8   },  
+  { 0xB2,  TLB,  INST,    4,  SMALL,  64  },  
+  { 0xB3,  TLB,  DATA,    4,  SMALL,  128 },  
+  { 0xB4,  TLB,  DATA1,    4,  SMALL,  256 },  
+  { 0xB5,  TLB,  DATA1,    8,  SMALL,  64  },  
+  { 0xB6,  TLB,  DATA1,    8,  SMALL,  128 },  
+  { 0xBA,  TLB,  DATA1,    4,  BOTH,  64  },  
+  { 0xC1,  STLB,  DATA1,    8,  SMALL,  1024},  
+  { 0xCA,  STLB,  DATA1,    4,  SMALL,  512 },  
+  { 0xD0,  CACHE,  L3,    4,  512*K,  64  },  
+  { 0xD1,  CACHE,  L3,    4,  1*M,  64  },  
+  { 0xD2,  CACHE,  L3,    4,  2*M,  64  },  
+  { 0xD3,  CACHE,  L3,    4,  4*M,  64  },  
+  { 0xD4,  CACHE,  L3,    4,  8*M,  64  },  
+  { 0xD6,  CACHE,  L3,    8,  1*M,  64  },  
+  { 0xD7,  CACHE,  L3,    8,  2*M,  64  },  
+  { 0xD8,  CACHE,  L3,    8,  4*M,  64  },  
+  { 0xD9,  CACHE,  L3,    8,  8*M,  64  },  
+  { 0xDA,  CACHE,  L3,    8,  12*M,  64  },  
+  { 0xDC,  CACHE,  L3,    12,   1536*K,  64  },  
+  { 0xDD,  CACHE,  L3,    12,   3*M,  64  },  
+  { 0xDE,  CACHE,  L3,    12,   6*M,  64  },  
+  { 0xDF,  CACHE,  L3,    12,  12*M,  64  },  
+  { 0xE0,  CACHE,  L3,    12,  18*M,  64  },  
+  { 0xE2,  CACHE,  L3,    16,  2*M,  64  },  
+  { 0xE3,  CACHE,  L3,    16,  4*M,  64  },  
+  { 0xE4,  CACHE,  L3,    16,  8*M,  64  },  
+  { 0xE5,  CACHE,  L3,    16,  16*M,  64  },  
+  { 0xE6,  CACHE,  L3,    16,  24*M,  64  },  
+  { 0xF0,  PREFETCH, NA,    NA,  64,  NA  },  
+  { 0xF1,  PREFETCH, NA,    NA,  128,  NA  },  
+  { 0xFF,  CACHE,  NA,    NA,  0,  NA  }
 };
 
 STATIC
@@ -230,14 +342,14 @@ AmdIntelEmuInternalCpuidLeaf2 (
   if (L1DcAssoc == 0xFF) {
     L1DcAssoc = FULLY;
   }
- 
+
   L1IcSize     = (UINT8)BitFieldRead32 (CpuidEdx, 24, 31);
   L1IcAssoc    = (UINT8)BitFieldRead32 (CpuidEdx, 16, 23);
   L1IcLineSize = (UINT8)BitFieldRead32 (CpuidEdx, 0,  7);
   if (L1IcAssoc == 0xFF) {
     L1IcAssoc = FULLY;
   }
-    
+
   AsmCpuid (0x80000006, &CpuidEax, &CpuidEbx, &CpuidEcx, &CpuidEdx);
   //
   // NOTE: The following TLBs do not have 0x0F defined as fully associative,
@@ -267,7 +379,7 @@ AmdIntelEmuInternalCpuidLeaf2 (
   if (L2ITlb4KAssoc == 0x0F) {
     L2ITlb4KAssoc = FULLY;
   }
-  
+
   L2Size        = (UINT16)BitFieldRead32 (CpuidEcx, 16, 31);
   L2Assoc       = (UINT8)BitFieldRead32  (CpuidEcx, 12, 15);
   L2LinesPerTag = (UINT8)BitFieldRead32  (CpuidEcx, 8,  11);
