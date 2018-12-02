@@ -255,6 +255,8 @@ typedef union {
   UINT32 Uint32;
 } AMD_VMCB_CLEAN_FIELD;
 
+VERIFY_SIZE_OF (AMD_VMCB_CLEAN_FIELD, 4);
+
 typedef enum {
   AmdVmcbIntr              = 0,
   AmdVmcbNMI               = 2,
@@ -273,6 +275,8 @@ typedef union {
   }      Bits;
   UINT64 Uint64;
 } AMD_VMCB_EVENT;
+
+VERIFY_SIZE_OF (AMD_VMCB_EVENT, 8);
 
 typedef union {
   PACKED struct {
@@ -481,6 +485,8 @@ typedef PACKED struct {
   UINT64                       LASTEXCPFROM;
   UINT64                       LASTEXCPTO;
 } AMD_VMCB_SAVE_STATE_AREA_NON_ES;
+
+VERIFY_SIZE_OF (AMD_VMCB_SAVE_STATE_AREA_NON_ES, 0x298);
 
 typedef PACKED struct {
   // rax shall be accessed via VMCB.
