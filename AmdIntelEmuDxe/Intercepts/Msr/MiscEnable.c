@@ -28,9 +28,7 @@ AmdIntelEmuInternalRdmsrMiscEnable (
 
   HwcrMsr.Uint64             = AsmReadMsr64 (MSR_AMD_HWCR);
   MiscEnableMsr.Bits.MONITOR = (HwcrMsr.Bits.MonWaitDis ? 0 : 1);
-  //
-  // TODO: Implement EIST via PowerNOW!
-  //
+
   AmdIntelEmuInternalWriteMsrValue64 (
     &SaveState->RAX,
     Registers,
@@ -64,7 +62,4 @@ AmdIntelEmuInternalWrmsrMiscEnable (
   HwcrMsr.Uint64          = AsmReadMsr64 (MSR_AMD_HWCR);
   HwcrMsr.Bits.MonWaitDis = (MiscEnableMsr.Bits.MONITOR ? 0 : 1);
   AsmWriteMsr64 (MSR_AMD_HWCR, HwcrMsr.Uint64);
-  //
-  // TODO: Implement EIST via PowerNOW!
-  //
 }

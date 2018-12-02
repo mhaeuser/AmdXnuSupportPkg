@@ -12,9 +12,7 @@ AmdIntelEmuInternalRdmsrX2apicVersion (
 {
   ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
-  //
-  // TODO: Verify implications of raising the version number.
-  //
+
   AmdIntelEmuInternalWriteMsrValue64 (
     &SaveState->RAX,
     Registers,
