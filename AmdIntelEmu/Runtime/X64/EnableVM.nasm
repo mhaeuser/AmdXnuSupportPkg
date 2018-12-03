@@ -13,8 +13,8 @@ ASM_PFX (AmdIntelEmuInternalEnableVm):
   ;
   mov     [rcx + AMD_VMCB_RSP_OFFSET], rsp
 .ReturnRel:
-  lea     rsp, [$ + (.Return - .ReturnRel)]
-  mov     [rcx + AMD_VMCB_RIP_OFFSET], rsp
+  lea     rax, [$ + (.Return - .ReturnRel)]
+  mov     [rcx + AMD_VMCB_RIP_OFFSET], rax
   mov     rsp, rdx     ; Set up the new host stack.
   ;
   ; Software must load RAX (EAX in 32-bit mode) with the physical address of
