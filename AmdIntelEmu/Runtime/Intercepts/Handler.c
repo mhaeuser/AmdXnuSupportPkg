@@ -240,7 +240,7 @@ InternalHandleEvents (
   }
 }
 
-VOID
+AMD_VMCB_CONTROL_AREA *
 EFIAPI
 AmdIntelEmuInternalInterceptionHandler (
   IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
@@ -320,4 +320,8 @@ AmdIntelEmuInternalInterceptionHandler (
   }
 
   InternalHandleEvents (Vmcb);
+  //
+  // Return Vmcb so it is loaded into rax when returning to the vmrun loop.
+  //
+  return Vmcb;
 }
