@@ -259,6 +259,7 @@ AmdIntelEmuInternalInterceptionHandler (
   Vmcb->VmcbCleanBits.Uint32 = MAX_UINT32;
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
 
   switch (Vmcb->EXITCODE) {
     case VMEXIT_EXCP_UD:

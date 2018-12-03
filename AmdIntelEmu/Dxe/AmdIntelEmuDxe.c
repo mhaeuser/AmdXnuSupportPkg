@@ -609,6 +609,16 @@ AmdIntelEmuVirtualizeSystem (
   GuestVmcb->VmcbSaveState  = ((UINT64)(UINTN)GuestVmcb + 0x400);
   InternalInitMsrPm (&Private, GuestVmcb);
   //
+  // Perform NP initialization based on Runtime-returned information.
+  //
+  if (Private.RuntimeContext.NpEnabled) {
+    GuestVmcb->NP_ENABLE = 1;
+    GuestVmcb->N_CR3     = CreateIdentityMappingPageTables (
+                             &Private,
+                             InternalSplitAndUnmapPage
+                             );
+  }
+  //
   // Copy the template to all VMCBs.
   //
   for (Index = 1; Index < Private.NumEnabledProcessors; ++Index) {
@@ -630,16 +640,6 @@ AmdIntelEmuVirtualizeSystem (
             &Private.NumMsrIntercepts,
             &Private.MsrIntercepts
             );
-  //
-  // Perform NP initialization based on Runtime-returned information.
-  //
-  if (Private.RuntimeContext.NpEnabled) {
-    GuestVmcb->NP_ENABLE = 1;
-    GuestVmcb->N_CR3     = CreateIdentityMappingPageTables (
-                             &Private,
-                             InternalSplitAndUnmapPage
-                             );
-  }
   //
   // Enable AP virtualization.
   //
