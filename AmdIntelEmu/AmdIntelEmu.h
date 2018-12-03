@@ -487,6 +487,13 @@ typedef PACKED struct {
 
 VERIFY_SIZE_OF (AMD_VMCB_SAVE_STATE_AREA_NON_ES, 0x298);
 
+typedef PACKED struct {
+  // rax shall be accessed via VMCB.
+  UINT64 Rbx;
+  UINT64 Rcx;
+  UINT64 Rdx;
+} AMD_INTEL_EMU_REGISTERS;
+
 #pragma pack ()
 
 typedef struct AMD_INTEL_EMU_THREAD_CONTEXT AMD_INTEL_EMU_THREAD_CONTEXT;
@@ -513,13 +520,6 @@ struct AMD_INTEL_EMU_THREAD_CONTEXT {
   BOOLEAN                          IretTf;
   AMD_VMCB_EVENT                   QueueEvent;
 };
-
-typedef struct {
-  // rax shall be accessed via VMCB.
-  UINT64 Rbx;
-  UINT64 Rcx;
-  UINT64 Rdx;
-} AMD_INTEL_EMU_REGISTERS;
 
 typedef
 VOID
