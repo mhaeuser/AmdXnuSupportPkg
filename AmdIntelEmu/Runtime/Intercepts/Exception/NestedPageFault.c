@@ -31,9 +31,9 @@ InternalExceptionNpfPostStep (
   IN     UINTN                  ResumeContext
   )
 {
-  AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
-  PAGE_TABLE_4K_ENTRY     *Pte;
-  UINT64                  Address;
+  CONST AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
+  PAGE_TABLE_4K_ENTRY           *Pte;
+  UINT64                        Address;
 
   ASSERT (Vmcb != NULL);
   ASSERT (ResumeContext != 0);
@@ -53,13 +53,13 @@ InternalExceptionNpfPostStep (
 }
 
 STATIC
-AMD_INTEL_EMU_MMIO_INFO *
+CONST AMD_INTEL_EMU_MMIO_INFO *
 InternalGetMmioInfo (
   IN UINT64  Address
   )
 {
-  UINTN                   Index;
-  AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
+  UINTN                         Index;
+  CONST AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
 
   for (Index = 0; Index < mAmdIntelEmuInternalNumMmioInfo; ++Index) {
     MmioInfo = &mAmdIntelEmuInternalMmioInfo[Index];
@@ -77,11 +77,11 @@ AmdIntelEmuInternalExceptionNpf (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   )
 {
-  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
-  AMD_VMCB_EXITINFO1_NPF       ExitInfo1;
-  UINT64                       Address;
-  AMD_INTEL_EMU_MMIO_INFO      *MmioInfo;
-  PAGE_TABLE_4K_ENTRY          *Pte;
+  AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext;
+  AMD_VMCB_EXITINFO1_NPF        ExitInfo1;
+  UINT64                        Address;
+  CONST AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
+  PAGE_TABLE_4K_ENTRY           *Pte;
 
   ASSERT (Vmcb != NULL);
 
