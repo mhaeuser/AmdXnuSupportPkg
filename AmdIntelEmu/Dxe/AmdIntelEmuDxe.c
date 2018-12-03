@@ -9,6 +9,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
 #include "AmdIntelEmuDxe.h"
@@ -19,11 +20,11 @@
   ((VOID *)((UINTN)(Address) + ((Index) * SIZE_4KB)))
 
 typedef struct {
-  AMD_VMCB_CONTROL_AREA   *GuestVmcb;
-  AMD_VMCB_CONTROL_AREA   *HostVmcb;
-  VOID                    *HostStack;
-  AMD_INTEL_EMU_ENABLE_VM EnableVm;
-  UINT64                  TscStamp;
+  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
+  AMD_VMCB_CONTROL_AREA        *HostVmcb;
+  VOID                         *HostStack;
+  AMD_INTEL_EMU_ENABLE_VM      EnableVm;
+  UINT64                       TscStamp;
 } AMD_INTEL_EMU_THREAD_PRIVATE;
 
 typedef struct {
@@ -35,11 +36,14 @@ typedef struct {
   UINTN                                  BspNum;
   AMD_INTEL_EMU_RUNTIME_CONTEXT          RuntimeContext;
   AMD_INTEL_EMU_RUNTIME_ENTRY            RuntimeEntry;
-  UINTN                                  NumMmioInfo;
-  AMD_INTEL_EMU_MMIO_INFO                *MmioInfo;
   UINTN                                  NumMsrIntercepts;
   CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO *MsrIntercepts;
+  AMD_INTEL_EMU_THREAD_CONTEXT           *CurrentThreadContext;
 } AMD_INTEL_EMU_PRIVATE;
+
+STATIC CONST UINT64 mInternalMmioAddresses[] = {
+  FixedPcdGet32 (PcdCpuLocalApicBaseAddress)
+};
 
 STATIC
 BOOLEAN
@@ -223,6 +227,7 @@ InternalLaunchVmEnvironment (
   IN CONST AMD_INTEL_EMU_THREAD_PRIVATE  *Private
   )
 {
+  AMD_INTEL_EMU_THREAD_CONTEXT    *ThreadContext;
   AMD_VMCB_CONTROL_AREA           *GuestVmcb;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   MSR_VM_CR_REGISTER              VmCrMsr;
@@ -237,13 +242,15 @@ InternalLaunchVmEnvironment (
 
   ASSERT (Private != NULL);
 
-  ASSERT (Private->GuestVmcb != NULL);
   ASSERT (Private->HostVmcb != NULL);
   ASSERT (Private->HostStack != NULL);
 
   AsmWriteMsr64 (MSR_VM_HSAVE_PA, (UINTN)Private->HostVmcb);
 
-  GuestVmcb = Private->GuestVmcb;
+  ThreadContext = Private->ThreadContext;
+  ASSERT (ThreadContext != NULL);
+
+  GuestVmcb = ThreadContext->Vmcb;
   ASSERT (GuestVmcb != NULL);
 
   SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(
@@ -373,7 +380,7 @@ InternalLaunchVmEnvironment (
   // Virtualize the current execution environment.  This call will return here.
   //
   ASSERT (Private->EnableVm != NULL);
-  Private->EnableVm (GuestVmcb, Private->HostStack);
+  Private->EnableVm (ThreadContext, Private->HostStack);
 }
 
 STATIC
@@ -437,13 +444,14 @@ InternalSplitAndUnmapPage (
   IN PAGE_TABLE_4K_ENTRY  *PageTableEntry4K  OPTIONAL
   )
 {
-  BOOLEAN                     Result;
+  BOOLEAN                      Result;
 
-  CONST AMD_INTEL_EMU_PRIVATE *Private;
-  UINTN                       Start;
-  UINTN                       End;
-  UINTN                       Index;
-  AMD_INTEL_EMU_MMIO_INFO     *MmioInfo;
+  CONST AMD_INTEL_EMU_PRIVATE  *Private;
+  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
+  UINTN                        Start;
+  UINTN                        End;
+  UINTN                        Index;
+  AMD_INTEL_EMU_MMIO_INFO      *MmioInfo;
 
   ASSERT (Context != NULL);
   ASSERT (Size > 0);
@@ -463,9 +471,12 @@ InternalSplitAndUnmapPage (
     return TRUE;
   }
 
+  ThreadContext = Private->CurrentThreadContext;
+  ASSERT (ThreadContext != NULL);
+
   if (PageTableEntry4K != NULL) {
-    for (Index = 0; Index < Private->NumMmioInfo; ++Index) {
-      MmioInfo = &Private->MmioInfo[Index];
+    for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
+      MmioInfo = &ThreadContext->MmioInfo[Index];
       Result = InternalSplitAndUnmapPageWorker (
                  Private,
                  Address,
@@ -561,6 +572,7 @@ AmdIntelEmuVirtualizeSystem (
   AMD_VMCB_CONTROL_AREA        *VmcbWalker;
   EFI_STATUS                   Status;
   UINTN                        Index;
+  UINTN                        Index2;
   UINTN                        NumFinished;
   EFI_PROCESSOR_INFORMATION    ProcessorInfo;
   UINTN                        BspOffset;
@@ -613,10 +625,6 @@ AmdIntelEmuVirtualizeSystem (
   //
   if (Private.RuntimeContext.NpEnabled) {
     GuestVmcb->NP_ENABLE = 1;
-    GuestVmcb->N_CR3     = CreateIdentityMappingPageTables (
-                             &Private,
-                             InternalSplitAndUnmapPage
-                             );
   }
   //
   // Copy the template to all VMCBs.
@@ -635,11 +643,17 @@ AmdIntelEmuVirtualizeSystem (
   Private.RuntimeEntry (
             &Private.RuntimeContext,
             &ThreadPrivate.EnableVm,
-            &Private.NumMmioInfo,
-            &Private.MmioInfo,
             &Private.NumMsrIntercepts,
             &Private.MsrIntercepts
             );
+  //
+  // Initialize Thread Contexts.
+  //
+  for (Index = 0; Index < Private.RuntimeContext.NumThreadContexts; ++Index) {
+    for (Index2 = 0; Index2 < ARRAY_SIZE (mInternalMmioAddresses); ++Index2) {
+      ThreadContexts[Index].MmioInfo[Index2].Address = mInternalMmioAddresses[Index2];
+    }
+  }
   //
   // Enable AP virtualization.
   //
@@ -648,6 +662,17 @@ AmdIntelEmuVirtualizeSystem (
   for (Index = 0; Index < Private.NumProcessors; ++Index) {
     GuestVmcb = GET_PAGE (GuestVmcbs, NumFinished);
     ThreadContexts[Index].Vmcb = GuestVmcb;
+    //
+    // Every Guest VMCB needs its own Page Table so that MMIO interceptions
+    // can operate in parallel.
+    //
+    if (GuestVmcb->NP_ENABLE != 0) {
+      Private.CurrentThreadContext = &ThreadContexts[Index];
+      GuestVmcb->N_CR3 = CreateIdentityMappingPageTables (
+                           &Private,
+                           InternalSplitAndUnmapPage
+                           );
+    }
 
     if (Index == Private.BspNum) {
       BspOffset = NumFinished;
@@ -676,10 +701,10 @@ AmdIntelEmuVirtualizeSystem (
     // Pages are identity-mapped across all cores and the APs are only going to
     // read data, hence using stack memory is safe.
     //
-    ThreadPrivate.GuestVmcb = GuestVmcb;
-    ThreadPrivate.HostVmcb  = GET_PAGE (HostVmcbs, NumFinished);
-    ThreadPrivate.HostStack = GET_PAGE (HostStacks, NumFinished);
-    ThreadPrivate.TscStamp  = AsmReadTsc ();
+    ThreadPrivate.ThreadContext = &ThreadContexts[Index];
+    ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, NumFinished);
+    ThreadPrivate.HostStack     = GET_PAGE (HostStacks, NumFinished);
+    ThreadPrivate.TscStamp      = AsmReadTsc ();
     Status = Private.MpServices->StartupThisAP (
                                    Private.MpServices,
                                    InternalVirtualizeAp,
@@ -703,9 +728,9 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Enable BSP virtualization.
   //
-  ThreadPrivate.GuestVmcb = GET_PAGE (GuestVmcbs, BspOffset);
-  ThreadPrivate.HostVmcb  = GET_PAGE (HostVmcbs,  BspOffset);
-  ThreadPrivate.HostStack = GET_PAGE (HostStacks, BspOffset);
+  ThreadPrivate.ThreadContext = &ThreadContexts[BspOffset];
+  ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs,  BspOffset);
+  ThreadPrivate.HostStack     = GET_PAGE (HostStacks, BspOffset);
   
   InternalLaunchVmEnvironment (&ThreadPrivate);
 }
@@ -740,6 +765,7 @@ AmdIntelEmuDxeEntryPoint (
   UINTN                    BspNum;
   UINTN                    Index;
   EFI_EVENT                Event;
+  UINTN                    MmioInfoSize;
 
   if (!InternalIsSvmAvailable (&NripSupport, &NpSupport)) {
     return EFI_UNSUPPORTED;
@@ -792,10 +818,12 @@ AmdIntelEmuDxeEntryPoint (
   // Table entry.
   // MSR map: 1 page, IO map: 3 pages, LAPIC MMIO: 1 page, VMCBs: 2 per thread.
   //
-  NumPages  = (1 + 3 + 1 + (NumEnabledProcessors * (NUM_STACK_PAGES + 2)));
-  NumPages += EFI_SIZE_TO_PAGES (
-                NumEnabledProcessors * sizeof (AMD_INTEL_EMU_THREAD_CONTEXT)
-                );
+  NumPages     = (1 + 3 + 1 + (NumEnabledProcessors * (NUM_STACK_PAGES + 2)));
+  MmioInfoSize = (ARRAY_SIZE (mInternalMmioAddresses) * sizeof (AMD_INTEL_EMU_MMIO_INFO));
+  NumPages    += EFI_SIZE_TO_PAGES (
+                   NumEnabledProcessors
+                     * (sizeof (AMD_INTEL_EMU_THREAD_CONTEXT) + MmioInfoSize)
+                   );
   Memory = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
   if (Memory == NULL) {
     return EFI_OUT_OF_RESOURCES;

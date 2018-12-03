@@ -5,10 +5,17 @@
 #include "AmdIntelEmuRuntime.h"
 
 STATIC UINTN                        mInternalNumThreadContexts = 0;
-STATIC AMD_INTEL_EMU_THREAD_CONTEXT *mInternalThreadContexts = NULL;
+STATIC AMD_INTEL_EMU_THREAD_CONTEXT *mInternalThreadContexts   = NULL;
 
 GLOBAL_REMOVE_IF_UNREFERENCED BOOLEAN mAmdIntelEmuInternalNrip = FALSE;
-GLOBAL_REMOVE_IF_UNREFERENCED BOOLEAN mAmdIntelEmuInternalNp = FALSE;
+GLOBAL_REMOVE_IF_UNREFERENCED BOOLEAN mAmdIntelEmuInternalNp   = FALSE;
+
+VOID
+EFIAPI
+AmdIntelEmuInternalVmrun (
+  IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN     VOID                   *HostStack
+  );
 
 AMD_INTEL_EMU_THREAD_CONTEXT *
 AmdIntelEmuInternalGetThreadContext (
@@ -31,21 +38,43 @@ AmdIntelEmuInternalGetThreadContext (
   return ThreadContext;
 }
 
+STATIC
+VOID
+EFIAPI
+InternalEnableVm (
+  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext,
+  IN     VOID                          *HostStack
+  )
+{
+  UINTN                   Index;
+  AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
+
+  ASSERT (ThreadContext != NULL);
+  ASSERT (HostStack != NULL);
+
+  ASSERT (ThreadContext->Vmcb != NULL);
+  //
+  // Initialize the MMIO intercept handlers.
+  //
+  for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
+    MmioInfo = &ThreadContext->MmioInfo[Index];
+    MmioInfo->GetPage = AmdIntelEmuInternalGetMmioHandler (MmioInfo->Address);
+  }
+
+  AmdIntelEmuInternalVmrun (ThreadContext->Vmcb, HostStack);
+}
+
 VOID
 EFIAPI
 _ModuleEntryPoint (
   IN  CONST AMD_INTEL_EMU_RUNTIME_CONTEXT     *Context,
   OUT AMD_INTEL_EMU_ENABLE_VM                 *EnableVm,
-  OUT UINTN                                   *NumMmioInfo,
-  OUT AMD_INTEL_EMU_MMIO_INFO                 **MmioInfo,
   OUT UINTN                                   *NumMsrIntercepts,
   OUT CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO  **MsrIntercepts
   )
 {
   ASSERT (Context != NULL);
   ASSERT (EnableVm != NULL);
-  ASSERT (NumMmioInfo != NULL);
-  ASSERT (MmioInfo != NULL);
 
   mInternalNumThreadContexts = Context->NumThreadContexts;
   mInternalThreadContexts    = Context->ThreadContexts;
@@ -53,9 +82,7 @@ _ModuleEntryPoint (
   mAmdIntelEmuInternalNp     = Context->NpEnabled;
   AmdIntelEmuInternalMmioLapicSetPage (Context->LapicPage);
 
-  *EnableVm         = AmdIntelEmuInternalEnableVm;
-  *NumMmioInfo      = mAmdIntelEmuInternalNumMmioInfo;
-  *MmioInfo         = mAmdIntelEmuInternalMmioInfo;
+  *EnableVm         = InternalEnableVm;
   *NumMsrIntercepts = mAmdIntelEmuInternalNumMsrIntercepts;
   *MsrIntercepts    = mAmdIntelEmuInternalMsrIntercepts;
 }

@@ -5,13 +5,6 @@
 #include "hde/hde64.h"
 
 VOID
-EFIAPI
-AmdIntelEmuInternalEnableVm (
-  IN OUT VOID  *Vmcb,
-  IN     VOID  *HostStack
-  );
-
-VOID
 AmdIntelEmuInternalSingleStepRip (
   IN OUT AMD_INTEL_EMU_THREAD_CONTEXT      *ThreadContext,
   IN     AMD_INTEL_EMU_SINGLE_STEP_RESUME  ResumeHandler,
@@ -69,11 +62,13 @@ AmdIntelEmuInternalMmioLapicSetPage (
   IN VOID  *Page
   );
 
+AMD_INTEL_EMU_GET_MMIO_PAGE
+AmdIntelEmuInternalGetMmioHandler (
+  IN UINT64  Address
+  );
+
 extern BOOLEAN mAmdIntelEmuInternalNrip;
 extern BOOLEAN mAmdIntelEmuInternalNp;
-
-extern AMD_INTEL_EMU_MMIO_INFO mAmdIntelEmuInternalMmioInfo[];
-extern CONST UINTN             mAmdIntelEmuInternalNumMmioInfo;
 
 extern CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO mAmdIntelEmuInternalMsrIntercepts[];
 extern CONST UINTN                            mAmdIntelEmuInternalNumMsrIntercepts;

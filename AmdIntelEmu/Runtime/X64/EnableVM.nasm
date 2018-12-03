@@ -6,8 +6,8 @@ extern ASM_PFX (AmdIntelEmuInternalInterceptionHandler)
     DEFAULT REL
     SECTION .text
 
-global ASM_PFX (AmdIntelEmuInternalEnableVm)
-ASM_PFX (AmdIntelEmuInternalEnableVm):
+global ASM_PFX (AmdIntelEmuInternalVmrun)
+ASM_PFX (AmdIntelEmuInternalVmrun):
   ;
   ; Save the caller stack to return transparently later.
   ;

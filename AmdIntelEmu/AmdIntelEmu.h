@@ -505,20 +505,37 @@ VOID
   IN     UINTN                  ResumeContext
   );
 
+typedef
+UINT64
+(*AMD_INTEL_EMU_GET_MMIO_PAGE) (
+  IN UINT64  Address
+  );
+
+typedef struct {
+  UINT64                      Address;
+  AMD_INTEL_EMU_GET_MMIO_PAGE GetPage;
+  PAGE_TABLE_4K_ENTRY         *Pte;
+} AMD_INTEL_EMU_MMIO_INFO;
+
 struct AMD_INTEL_EMU_THREAD_CONTEXT {
   AMD_VMCB_CONTROL_AREA            *Vmcb;
   //
-  // Single-stepping.
+  // Single-stepping
   //
   BOOLEAN                          SsTf;
   BOOLEAN                          Btf;
   UINTN                            SingleStepContext;
   AMD_INTEL_EMU_SINGLE_STEP_RESUME SingleStepResume;
   //
-  // iret interception.
+  // iret interception
   //
   BOOLEAN                          IretTf;
   AMD_VMCB_EVENT                   QueueEvent;
+  //
+  // MMIO info
+  //
+  UINTN                            NumMmioInfo;
+  AMD_INTEL_EMU_MMIO_INFO          MmioInfo[];
 };
 
 typedef
@@ -535,22 +552,10 @@ typedef struct {
 } AMD_INTEL_EMU_MSR_INTERCEPT_INFO;
 
 typedef
-UINT64
-(*AMD_INTEL_EMU_GET_MMIO_PAGE) (
-  IN UINT64  Address
-  );
-
-typedef struct {
-  UINT64                      Address;
-  AMD_INTEL_EMU_GET_MMIO_PAGE GetPage;
-  PAGE_TABLE_4K_ENTRY         *Pte;
-} AMD_INTEL_EMU_MMIO_INFO;
-
-typedef
 VOID
 (EFIAPI *AMD_INTEL_EMU_ENABLE_VM) (
-  IN OUT VOID  *Vmcb,
-  IN     VOID  *HostStack
+  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext,
+  IN     VOID                          *HostStack
   );
 
 typedef struct {
@@ -566,8 +571,6 @@ VOID
 (EFIAPI *AMD_INTEL_EMU_RUNTIME_ENTRY) (
   IN  CONST AMD_INTEL_EMU_RUNTIME_CONTEXT     *Context,
   OUT AMD_INTEL_EMU_ENABLE_VM                 *EnableVm,
-  OUT UINTN                                   *NumMmioInfo,
-  OUT AMD_INTEL_EMU_MMIO_INFO                 **MmioInfo,
   OUT UINTN                                   *NumMsrIntercepts,
   OUT CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO  **MsrIntercepts
   );

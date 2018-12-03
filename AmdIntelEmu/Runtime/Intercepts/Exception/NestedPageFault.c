@@ -6,23 +6,38 @@
 
 #include "../../AmdIntelEmuRuntime.h"
 
+typedef struct {
+  UINT64                      Address;
+  AMD_INTEL_EMU_GET_MMIO_PAGE GetPage;
+} INTERNAL_MMIO_HANDLER_MAP;
+
 UINT64
 AmdIntelEmuInternalMmioLapic (
   IN UINT64  Address
   );
 
-GLOBAL_REMOVE_IF_UNREFERENCED
-AMD_INTEL_EMU_MMIO_INFO mAmdIntelEmuInternalMmioInfo[] = {
+STATIC CONST INTERNAL_MMIO_HANDLER_MAP mInternalMmioHandlerMap[] = {
   {
     FixedPcdGet32 (PcdCpuLocalApicBaseAddress),
-    AmdIntelEmuInternalMmioLapic,
-    NULL
+    AmdIntelEmuInternalMmioLapic
   }
 };
 
-GLOBAL_REMOVE_IF_UNREFERENCED
-CONST UINTN
-mAmdIntelEmuInternalNumMmioInfo = ARRAY_SIZE (mAmdIntelEmuInternalMmioInfo);
+AMD_INTEL_EMU_GET_MMIO_PAGE
+AmdIntelEmuInternalGetMmioHandler (
+  IN UINT64  Address
+  )
+{
+  UINTN Index;
+
+  for (Index = 0; Index < ARRAY_SIZE (mInternalMmioHandlerMap); ++Index) {
+    if (mInternalMmioHandlerMap[Index].Address == Address) {
+      return mInternalMmioHandlerMap[Index].GetPage;
+    }
+  }
+
+  return NULL;
+}
 
 STATIC
 VOID
@@ -55,14 +70,17 @@ InternalExceptionNpfPostStep (
 STATIC
 CONST AMD_INTEL_EMU_MMIO_INFO *
 InternalGetMmioInfo (
-  IN UINT64  Address
+  IN CONST AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext,
+  IN UINT64                              Address
   )
 {
   UINTN                         Index;
   CONST AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
 
-  for (Index = 0; Index < mAmdIntelEmuInternalNumMmioInfo; ++Index) {
-    MmioInfo = &mAmdIntelEmuInternalMmioInfo[Index];
+  ASSERT (ThreadContext != NULL);
+
+  for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
+    MmioInfo = &ThreadContext->MmioInfo[Index];
     if ((Address >= MmioInfo->Address)
      && (Address < (MmioInfo->Address + SIZE_4KB))) {
       return MmioInfo;
@@ -105,7 +123,7 @@ AmdIntelEmuInternalExceptionNpf (
     );
 
   Address  = Vmcb->EXITINFO2;
-  MmioInfo = InternalGetMmioInfo (Address);
+  MmioInfo = InternalGetMmioInfo (ThreadContext, Address);
   if (MmioInfo != NULL) {
     Pte = MmioInfo->Pte;
     ASSERT (Pte != NULL);

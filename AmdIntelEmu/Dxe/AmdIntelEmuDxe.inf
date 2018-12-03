@@ -22,6 +22,9 @@
   MdePkg/MdePkg.dec
   UefiCpuPkg/UefiCpuPkg.dec
 
+[Pcd]
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuLocalApicBaseAddress  ## CONSUMES
+
 [Protocols]
   gEfiMpServiceProtocolGuid  ## CONSUMES
 
