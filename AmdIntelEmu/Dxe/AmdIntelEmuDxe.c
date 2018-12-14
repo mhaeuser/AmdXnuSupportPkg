@@ -163,9 +163,9 @@ InternalSelectorGetOffset (
 {
   //
   // Index starts at bit 3 and needs to be multiplied by 8 to be converted to
-  // an offset.  The same is achieved by stripping the least significant byte.
+  // an offset.  The same is achieved by stripping [2:0].
   //
-  return (Selector & ~0xFFU);
+  return (Selector & ~0x07U);
 }
 
 STATIC
