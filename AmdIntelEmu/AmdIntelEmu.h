@@ -497,6 +497,12 @@ typedef PACKED struct {
 
 #pragma pack ()
 
+#define GET_NEXT_THREAD_CONTEXT(Context)                             \
+  (AMD_INTEL_EMU_THREAD_CONTEXT *)(                                  \
+    (UINTN)((Context) + 1)                                           \
+      + ((Context)->NumMmioInfo * sizeof (AMD_INTEL_EMU_MMIO_INFO))  \
+    )
+
 typedef struct AMD_INTEL_EMU_THREAD_CONTEXT AMD_INTEL_EMU_THREAD_CONTEXT;
 
 typedef

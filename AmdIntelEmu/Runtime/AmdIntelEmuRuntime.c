@@ -30,7 +30,7 @@ AmdIntelEmuInternalGetThreadContext (
   for (
     ThreadContext = mInternalThreadContexts, Index = 0;
     ThreadContext->Vmcb != Vmcb;
-    ++ThreadContext, ++Index
+    ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext), ++Index
     ) {
     ASSERT (Index < mInternalNumThreadContexts);
   }

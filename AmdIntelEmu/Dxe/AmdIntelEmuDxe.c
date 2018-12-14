@@ -570,6 +570,8 @@ AmdIntelEmuVirtualizeSystem (
   VOID                         *HostVmcbs;
   VOID                         *GuestVmcbs;
   AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContexts;
+  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
+  AMD_INTEL_EMU_THREAD_CONTEXT *BspThreadContext;
   AMD_VMCB_CONTROL_AREA        *GuestVmcb;
   AMD_VMCB_CONTROL_AREA        *VmcbWalker;
   EFI_STATUS                   Status;
@@ -652,25 +654,34 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Initialize Thread Contexts.
   //
-  for (Index = 0; Index < Private.RuntimeContext.NumThreads; ++Index) {
-    ThreadContexts[Index].NumMmioInfo = ARRAY_SIZE (mInternalMmioAddresses);
+  for (
+    Index = 0, ThreadContext = ThreadContexts;
+    Index < Private.RuntimeContext.NumThreads;
+    ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
+    ) {
+    ThreadContext->NumMmioInfo = ARRAY_SIZE (mInternalMmioAddresses);
 
-    for (Index2 = 0; Index2 < ThreadContexts[Index].NumMmioInfo; ++Index2) {
-      ThreadContexts[Index].MmioInfo[Index2].Address = mInternalMmioAddresses[Index2];
+    for (Index2 = 0; Index2 < ThreadContext->NumMmioInfo; ++Index2) {
+      ThreadContext->MmioInfo[Index2].Address = mInternalMmioAddresses[Index2];
     }
   }
   //
   // Enable AP virtualization.
   //
-  for (Index = 0; Index < Private.RuntimeContext.NumThreads; ++Index) {
+  BspThreadContext = NULL;
+  for (
+    Index = 0, ThreadContext = ThreadContexts;
+    Index < Private.RuntimeContext.NumThreads;
+    ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
+    ) {
     GuestVmcb = GET_PAGE (GuestVmcbs, Index);
-    ThreadContexts[Index].Vmcb = GuestVmcb;
+    ThreadContext->Vmcb = GuestVmcb;
     //
     // Every Guest VMCB needs its own Page Table so that MMIO interceptions
     // can operate in parallel.
     //
     if (GuestVmcb->NP_ENABLE != 0) {
-      Private.CurrentThreadContext = &ThreadContexts[Index];
+      Private.CurrentThreadContext = ThreadContext;
       GuestVmcb->N_CR3 = CreateIdentityMappingPageTables (
                            &Private,
                            InternalSplitAndUnmapPage
@@ -678,6 +689,7 @@ AmdIntelEmuVirtualizeSystem (
     }
 
     if (Index == Private.BspNum) {
+      BspThreadContext = ThreadContext;
       continue;
     }
 
@@ -696,7 +708,7 @@ AmdIntelEmuVirtualizeSystem (
     // Pages are identity-mapped across all cores and the APs are only going to
     // read data, hence using stack memory is safe.
     //
-    ThreadPrivate.ThreadContext = &ThreadContexts[Index];
+    ThreadPrivate.ThreadContext = ThreadContext;
     ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, Index);
     ThreadPrivate.HostStack     = GET_PAGE (
                                     HostStacks,
@@ -717,7 +729,8 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Enable BSP virtualization.
   //
-  ThreadPrivate.ThreadContext = &ThreadContexts[Private.BspNum];
+  ASSERT (BspThreadContext != NULL);
+  ThreadPrivate.ThreadContext = BspThreadContext;
   ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, Private.BspNum);
   ThreadPrivate.HostStack     = GET_PAGE (
                                   HostStacks,
