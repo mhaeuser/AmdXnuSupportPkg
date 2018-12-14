@@ -64,6 +64,7 @@ InternalExceptionNpfPostStep (
 
   Pte->Bits.Present              = 0;
   Pte->Bits.PageTableBaseAddress = Address;
+  Vmcb->TLB_CONTROL              = 0x03;
   Vmcb->VmcbCleanBits.Bits.NP    = 0;
 }
 
@@ -135,6 +136,7 @@ AmdIntelEmuInternalExceptionNpf (
 
     Pte->Bits.Present              = 1;
     Pte->Bits.PageTableBaseAddress = Address;
+    Vmcb->TLB_CONTROL              = 0x03;
     Vmcb->VmcbCleanBits.Bits.NP    = 0;
 
     AmdIntelEmuInternalSingleStepRip (
