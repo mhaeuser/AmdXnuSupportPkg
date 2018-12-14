@@ -196,7 +196,7 @@ Split2MPageTo4K (
   //
   // Fill in 2M page entry.
   //
-  *PageEntry2M = (UINT64)(UINTN)PageTableEntry | IA32_PG_P | IA32_PG_RW;
+  *PageEntry2M = (UINT64)(UINTN)PageTableEntry | IA32_PG_P | IA32_PG_RW | IA32_PG_US;
 
   PhysicalAddress4K = PhysicalAddress;
   for (IndexOfPageTableEntries = 0; IndexOfPageTableEntries < 512; IndexOfPageTableEntries++, PageTableEntry++, PhysicalAddress4K += SIZE_4KB) {
@@ -242,7 +242,7 @@ Split1GPageTo2M (
   //
   // Fill in 1G page entry.
   //
-  *PageEntry1G = (UINT64)(UINTN)PageDirectoryEntry | IA32_PG_P | IA32_PG_RW;
+  *PageEntry1G = (UINT64)(UINTN)PageDirectoryEntry | IA32_PG_P | IA32_PG_RW | IA32_PG_US;
 
   PhysicalAddress2M = PhysicalAddress;
   for (IndexOfPageDirectoryEntries = 0; IndexOfPageDirectoryEntries < 512; IndexOfPageDirectoryEntries++, PageDirectoryEntry++, PhysicalAddress2M += SIZE_2MB) {
@@ -365,14 +365,14 @@ SetPageTablePoolUnmapped (
     for (EntryIndex = 0;
           EntryIndex < EFI_PAGE_SIZE / sizeof (UINT64);
           ++EntryIndex) {
-      NewPageTable[EntryIndex] = PhysicalAddress | IA32_PG_P | IA32_PG_RW;
+      NewPageTable[EntryIndex] = PhysicalAddress | IA32_PG_P | IA32_PG_RW | IA32_PG_US;
       if (Level > 2) {
         NewPageTable[EntryIndex] |= IA32_PG_PS;
       }
       PhysicalAddress += LevelSize[Level - 1];
     }
 
-    PageTable[Index] = (UINT64)(UINTN)NewPageTable | IA32_PG_P | IA32_PG_RW;
+    PageTable[Index] = (UINT64)(UINTN)NewPageTable | IA32_PG_P | IA32_PG_RW | IA32_PG_US;
     PageTable = NewPageTable;
   }
 }
