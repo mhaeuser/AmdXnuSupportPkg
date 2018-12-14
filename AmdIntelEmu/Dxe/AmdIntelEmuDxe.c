@@ -380,7 +380,10 @@ InternalLaunchVmEnvironment (
   // Virtualize the current execution environment.  This call will return here.
   //
   ASSERT (Private->EnableVm != NULL);
-  Private->EnableVm (ThreadContext, Private->HostStack);
+  Private->EnableVm (
+             ThreadContext,
+             (VOID *)((UINTN)Private->HostStack + (NUM_STACK_PAGES * SIZE_4KB))
+             );
 }
 
 STATIC
