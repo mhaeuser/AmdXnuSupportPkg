@@ -612,20 +612,11 @@ AmdIntelEmuVirtualizeSystem (
   GuestVmcb->MSRPM_BASE_PA  = (UINT64)(UINTN)MsrPm;
   GuestVmcb->GuestAsid      = 1;
   GuestVmcb->VmcbSaveState  = ((UINT64)(UINTN)GuestVmcb + 0x400);
-  InternalInitMsrPm (&Private, GuestVmcb);
   //
   // Perform NP initialization based on Runtime-returned information.
   //
   if (Private.RuntimeContext.NpEnabled) {
     GuestVmcb->NP_ENABLE = 1;
-  }
-  //
-  // Copy the template to all VMCBs.
-  //
-  for (Index = 1; Index < Private.NumEnabledProcessors; ++Index) {
-    VmcbWalker = GET_PAGE (GuestVmcb, Index);
-    CopyMem (VmcbWalker, GuestVmcb, SIZE_4KB);
-    VmcbWalker->VmcbSaveState = ((UINT64)(UINTN)VmcbWalker + 0x400);
   }
   //
   // Initialize the runtime environment.
@@ -639,6 +630,16 @@ AmdIntelEmuVirtualizeSystem (
             &Private.NumMsrIntercepts,
             &Private.MsrIntercepts
             );
+
+  InternalInitMsrPm (&Private, GuestVmcb);
+  //
+  // Copy the template to all VMCBs.
+  //
+  for (Index = 1; Index < Private.NumEnabledProcessors; ++Index) {
+    VmcbWalker = GET_PAGE (GuestVmcbs, Index);
+    CopyMem (VmcbWalker, GuestVmcb, SIZE_4KB);
+    VmcbWalker->VmcbSaveState = ((UINT64)(UINTN)VmcbWalker + 0x400);
+  }
   //
   // Initialize Thread Contexts.
   //
