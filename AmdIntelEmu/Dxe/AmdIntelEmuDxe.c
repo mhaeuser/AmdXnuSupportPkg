@@ -66,6 +66,7 @@ InternalIsSvmAvailable (
     NULL
     );
   if (ExtendedCpuSigEcx.Bits.SVM == 0) {
+    DEBUG ((DEBUG_ERROR, "AMD-V is not supported on this platform.\n"));
     return FALSE;
   }
 
@@ -85,13 +86,18 @@ InternalIsSvmAvailable (
     // SVMDIS is read-only when locking is unsupported.
     //
     if ((SvmFeatureIdEdx.Bits.SVML != 0) && (VmCrRegister.Bits.LOCK == 0)) {
+      DEBUG ((DEBUG_WARN, "AMD-V is disabled but unlocked, enabling... "));
+
       VmCrRegister.Bits.SVMDIS = 0;
       AsmWriteMsr64 (MSR_VM_CR, VmCrRegister.Uint64);
       DEBUG_CODE (
         VmCrRegister.Uint64 = AsmReadMsr64 (MSR_VM_CR);
         ASSERT (VmCrRegister.Bits.SVMDIS == 0);
         );
+
+      DEBUG ((DEBUG_WARN, "Done.\n"));
     } else {
+      DEBUG ((DEBUG_ERROR, "AMD-V is disabled and locked.\n"));
       return FALSE;
     }
   }
@@ -100,6 +106,13 @@ InternalIsSvmAvailable (
   //
   *NripSupport = (SvmFeatureIdEdx.Bits.NRIPS != 0);
   *NpSupport   = (SvmFeatureIdEdx.Bits.NP != 0);
+
+  DEBUG ((
+    DEBUG_INFO,
+    "AMD-V is enabled. NRIP: %d, NP: %d\n",
+    *NripSupport,
+    *NpSupport
+    ));
 
   return TRUE;
 }
@@ -819,6 +832,7 @@ AmdIntelEmuDxeEntryPoint (
                    );
   Memory = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
   if (Memory == NULL) {
+    DEBUG ((DEBUG_ERROR, "Failed to allocate the HV runtime memory.\n"));
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -838,6 +852,7 @@ AmdIntelEmuDxeEntryPoint (
                   );
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "Failed to create the HV ExitBS event.\n"));
     FreeAlignedPages (Memory, NumPages);
     return Status;
   }
