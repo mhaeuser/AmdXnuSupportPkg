@@ -479,19 +479,17 @@ InternalSplitAndUnmapPage (
   ThreadContext = Private->CurrentThreadContext;
   ASSERT (ThreadContext != NULL);
 
-  if (PageTableEntry4K != NULL) {
-    for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
-      MmioInfo = &ThreadContext->MmioInfo[Index];
-      Result = InternalSplitAndUnmapPageWorker (
-                 Address,
-                 Size,
-                 MmioInfo->Address,
-                 (MmioInfo->Address + SIZE_4KB)
-                 );
-      if (Result) {
-        MmioInfo->Pte = PageTableEntry4K;
-        return TRUE;
-      }
+  for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
+    MmioInfo = &ThreadContext->MmioInfo[Index];
+    Result = InternalSplitAndUnmapPageWorker (
+                Address,
+                Size,
+                MmioInfo->Address,
+                (MmioInfo->Address + SIZE_4KB)
+                );
+    if (Result) {
+      MmioInfo->Pte = PageTableEntry4K;
+      return TRUE;
     }
   }
 
