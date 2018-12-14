@@ -31,7 +31,6 @@ typedef struct {
   UINTN                                  Address;
   UINTN                                  Size;
   EFI_MP_SERVICES_PROTOCOL               *MpServices;
-  UINTN                                  NumThreads;
   UINTN                                  BspNum;
   AMD_INTEL_EMU_RUNTIME_CONTEXT          RuntimeContext;
   AMD_INTEL_EMU_RUNTIME_ENTRY            RuntimeEntry;
@@ -578,7 +577,6 @@ AmdIntelEmuVirtualizeSystem (
   EFI_STATUS                   Status;
   UINTN                        Index;
   UINTN                        Index2;
-  UINTN                        NumFinished;
   EFI_PROCESSOR_INFORMATION    ProcessorInfo;
 
   CopyMem (&Private, Memory, sizeof (Private));
@@ -603,15 +601,15 @@ AmdIntelEmuVirtualizeSystem (
   HostStacks     = GET_PAGE (LapicMmioPage, 1);
   HostVmcbs      = GET_PAGE (
                      HostStacks,
-                     (Private.NumThreads * NUM_STACK_PAGES)
+                     (Private.RuntimeContext.NumThreads * NUM_STACK_PAGES)
                      );
-  GuestVmcbs     = GET_PAGE (HostVmcbs,  Private.NumThreads);
-  ThreadContexts = GET_PAGE (GuestVmcbs, Private.NumThreads);
+  GuestVmcbs     = GET_PAGE (HostVmcbs,  Private.RuntimeContext.NumThreads);
+  ThreadContexts = GET_PAGE (GuestVmcbs, Private.RuntimeContext.NumThreads);
   //
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
   ZeroMem (MsrPm,      (4 * SIZE_4KB));
-  ZeroMem (GuestVmcbs, (Private.NumThreads * SIZE_4KB));
+  ZeroMem (GuestVmcbs, (Private.RuntimeContext.NumThreads * SIZE_4KB));
   //
   // Set up the generic VMCB used on all cores.
   //
@@ -635,9 +633,8 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Initialize the runtime environment.
   //
-  Private.RuntimeContext.NumThreadContexts = Private.NumThreads;
-  Private.RuntimeContext.ThreadContexts    = ThreadContexts;
-  Private.RuntimeContext.LapicPage         = LapicMmioPage;
+  Private.RuntimeContext.ThreadContexts = ThreadContexts;
+  Private.RuntimeContext.LapicPage      = LapicMmioPage;
   Private.RuntimeEntry (
             &Private.RuntimeContext,
             &ThreadPrivate.EnableVm,
@@ -649,7 +646,7 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Copy the template to all VMCBs.
   //
-  for (Index = 1; Index < Private.NumThreads; ++Index) {
+  for (Index = 1; Index < Private.RuntimeContext.NumThreads; ++Index) {
     VmcbWalker = GET_PAGE (GuestVmcbs, Index);
     CopyMem (VmcbWalker, GuestVmcb, SIZE_4KB);
     VmcbWalker->VmcbSaveState = ((UINT64)(UINTN)VmcbWalker + 0x400);
@@ -657,7 +654,7 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Initialize Thread Contexts.
   //
-  for (Index = 0; Index < Private.RuntimeContext.NumThreadContexts; ++Index) {
+  for (Index = 0; Index < Private.RuntimeContext.NumThreads; ++Index) {
     ThreadContexts[Index].NumMmioInfo = ARRAY_SIZE (mInternalMmioAddresses);
 
     for (Index2 = 0; Index2 < ThreadContexts[Index].NumMmioInfo; ++Index2) {
@@ -667,13 +664,8 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Enable AP virtualization.
   //
-  ;
-  for (
-    Index = 0, NumFinished = 0;
-    Index < Private.NumThreads;
-    ++Index, ++NumFinished
-    ) {
-    GuestVmcb = GET_PAGE (GuestVmcbs, NumFinished);
+  for (Index = 0; Index < Private.RuntimeContext.NumThreads; ++Index) {
+    GuestVmcb = GET_PAGE (GuestVmcbs, Index);
     ThreadContexts[Index].Vmcb = GuestVmcb;
     //
     // Every Guest VMCB needs its own Page Table so that MMIO interceptions
@@ -707,10 +699,10 @@ AmdIntelEmuVirtualizeSystem (
     // read data, hence using stack memory is safe.
     //
     ThreadPrivate.ThreadContext = &ThreadContexts[Index];
-    ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, NumFinished);
+    ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, Index);
     ThreadPrivate.HostStack     = GET_PAGE (
                                     HostStacks,
-                                    (NumFinished * NUM_STACK_PAGES)
+                                    (Index * NUM_STACK_PAGES)
                                     );
     ThreadPrivate.TscStamp = AsmReadTsc ();
     Status = Private.MpServices->StartupThisAP (
@@ -723,8 +715,6 @@ AmdIntelEmuVirtualizeSystem (
                                    NULL
                                    );
     ASSERT_EFI_ERROR (Status);
-
-    ++NumFinished;
   }
   //
   // Enable BSP virtualization.
@@ -839,8 +829,8 @@ AmdIntelEmuDxeEntryPoint (
   Memory->Address                    = (UINTN)Memory;
   Memory->Size                       = EFI_PAGES_TO_SIZE (NumPages);
   Memory->MpServices                 = MpServices;
-  Memory->NumThreads                 = NumProcessors;
   Memory->BspNum                     = BspNum;
+  Memory->RuntimeContext.NumThreads  = NumProcessors;
   Memory->RuntimeContext.NpEnabled   = NpSupport;
   Memory->RuntimeContext.NripSupport = NripSupport;
   Status = gBS->CreateEvent (

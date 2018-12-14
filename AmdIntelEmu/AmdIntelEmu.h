@@ -559,7 +559,7 @@ VOID
   );
 
 typedef struct {
-  UINTN                         NumThreadContexts;
+  UINTN                         NumThreads;
   AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContexts;
   BOOLEAN                       NripSupport;
   BOOLEAN                       NpEnabled;

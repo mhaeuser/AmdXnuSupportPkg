@@ -76,7 +76,7 @@ _ModuleEntryPoint (
   ASSERT (Context != NULL);
   ASSERT (EnableVm != NULL);
 
-  mInternalNumThreadContexts = Context->NumThreadContexts;
+  mInternalNumThreadContexts = Context->NumThreads;
   mInternalThreadContexts    = Context->ThreadContexts;
   mAmdIntelEmuInternalNrip   = Context->NripSupport;
   mAmdIntelEmuInternalNp     = Context->NpEnabled;
