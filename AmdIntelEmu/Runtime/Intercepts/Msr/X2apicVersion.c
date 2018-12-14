@@ -1,5 +1,7 @@
 #include <Base.h>
 
+#include <Register/LocalApic.h>
+
 #include <Library/DebugLib.h>
 
 #include "../../AmdIntelEmuRuntime.h"
@@ -16,7 +18,12 @@ AmdIntelEmuInternalRdmsrX2apicVersion (
   AmdIntelEmuInternalWriteMsrValue64 (
     &SaveState->RAX,
     Registers,
-    0x14
+    BitFieldWrite32 (
+      AmdIntelEmuReadLocalApicReg (XAPIC_VERSION_OFFSET),
+      0,
+      7,
+      0x14
+      )
     );
 }
 

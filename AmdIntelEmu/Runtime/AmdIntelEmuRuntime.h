@@ -67,6 +67,25 @@ AmdIntelEmuInternalGetMmioHandler (
   IN UINT64  Address
   );
 
+/**
+  Read from a local APIC register.
+
+  This function reads from a local APIC register either in xAPIC or x2APIC mode.
+  It is required that in xAPIC mode wider registers (64-bit or 256-bit) must be
+  accessed using multiple 32-bit loads or stores, so this function only performs
+  32-bit read.
+
+  @param  MmioOffset  The MMIO offset of the local APIC register in xAPIC mode.
+                      It must be 16-byte aligned.
+
+  @return 32-bit      Value read from the register.
+
+**/
+UINT32
+AmdIntelEmuReadLocalApicReg (
+  IN UINTN  MmioOffset
+  );
+
 extern BOOLEAN mAmdIntelEmuInternalNrip;
 extern BOOLEAN mAmdIntelEmuInternalNp;
 

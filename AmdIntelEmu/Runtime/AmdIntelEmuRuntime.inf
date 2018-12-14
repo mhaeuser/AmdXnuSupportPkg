@@ -28,10 +28,12 @@
   BaseLib
   BaseMemoryLib
   DebugLib
+  IoLib
 
 [Sources]
   AmdIntelEmuRuntime.c
 
+  LocalApic.c
   hde/hde64.c
 
   Intercepts/Handler.c

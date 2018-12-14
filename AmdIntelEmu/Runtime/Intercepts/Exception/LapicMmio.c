@@ -2,8 +2,11 @@
 
 #include <Register/LocalApic.h>
 
+#include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/PcdLib.h>
+
+#include "../../AmdIntelEmuRuntime.h"
 
 STATIC CONST VOID *mLapicVersionPage = NULL;
 
@@ -15,7 +18,14 @@ AmdIntelEmuInternalMmioLapicSetPage (
   ASSERT (Page != NULL);
   ASSERT (((UINTN)Page % SIZE_4KB) == 0);
 
-  *(UINT32 *)((UINTN)Page + XAPIC_VERSION_OFFSET) = 0x14;
+  *(UINT32 *)((UINTN)Page + XAPIC_VERSION_OFFSET) = BitFieldWrite32 (
+                                                      AmdIntelEmuReadLocalApicReg (
+                                                        XAPIC_VERSION_OFFSET
+                                                        ),
+                                                      0,
+                                                      7,
+                                                      0x14
+                                                      );
 
   mLapicVersionPage = Page;
 }
