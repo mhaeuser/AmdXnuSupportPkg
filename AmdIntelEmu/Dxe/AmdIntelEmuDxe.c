@@ -590,7 +590,7 @@ AmdIntelEmuVirtualizeSystem (
   // The LAPIC MMIO page's high memory is unused.
   //
   HostStacks     = GET_PAGE (LapicMmioPage, 1);
-  HostVmcbs      = GET_PAGE (HostStacks,    Private.NumEnabledProcessors);
+  HostVmcbs      = GET_PAGE (HostStacks,    (Private.NumEnabledProcessors * NUM_STACK_PAGES));
   GuestVmcbs     = GET_PAGE (HostVmcbs,     Private.NumEnabledProcessors);
   ThreadContexts = GET_PAGE (GuestVmcbs,    Private.NumEnabledProcessors);
   //
@@ -696,7 +696,7 @@ AmdIntelEmuVirtualizeSystem (
     //
     ThreadPrivate.ThreadContext = &ThreadContexts[Index];
     ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, NumFinished);
-    ThreadPrivate.HostStack     = GET_PAGE (HostStacks, NumFinished);
+    ThreadPrivate.HostStack     = GET_PAGE (HostStacks, (NumFinished * NUM_STACK_PAGES));
     ThreadPrivate.TscStamp      = AsmReadTsc ();
     Status = Private.MpServices->StartupThisAP (
                                    Private.MpServices,
@@ -723,7 +723,7 @@ AmdIntelEmuVirtualizeSystem (
   //
   ThreadPrivate.ThreadContext = &ThreadContexts[BspOffset];
   ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs,  BspOffset);
-  ThreadPrivate.HostStack     = GET_PAGE (HostStacks, BspOffset);
+  ThreadPrivate.HostStack     = GET_PAGE (HostStacks, (BspOffset * NUM_STACK_PAGES));
   
   InternalLaunchVmEnvironment (&ThreadPrivate);
 }
