@@ -128,9 +128,10 @@ AmdIntelEmuInternalInterceptRdmsr (
     if (MsrIntercept->MsrIndex == MsrIndex) {
       if (MsrIntercept->Read != NULL) {
         MsrIntercept->Read (SaveState, Registers);
+        return;
       }
 
-      return;
+      break;
     }
   }
 
@@ -158,9 +159,10 @@ AmdIntelEmuInternalInterceptWrmsr (
     if (MsrIntercept->MsrIndex == MsrIndex) {
       if (MsrIntercept->Write != NULL) {
         MsrIntercept->Write (SaveState, Registers);
+        return;
       }
 
-      return;
+      break;
     }
   }
 
