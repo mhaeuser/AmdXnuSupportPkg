@@ -405,27 +405,19 @@ InternalVirtualizeAp (
 STATIC
 BOOLEAN
 InternalSplitAndUnmapPageWorker (
-  IN CONST AMD_INTEL_EMU_PRIVATE *Private,
-  IN PHYSICAL_ADDRESS            Address,
-  IN UINTN                       Size,
-  IN UINTN                       Start,
-  IN UINTN                       End
+  IN PHYSICAL_ADDRESS  Address,
+  IN UINTN             Size,
+  IN UINTN             Start,
+  IN UINTN             End
   )
 {
-  if (Private->Size > Size) {
-    //
-    // Verify the page passed is contained in the VMM data range.
-    //
-    if ((Address >= Start) && ((Address + Size) <= End)) {
-      return TRUE;
-    }
-  } else {
-    //
-    // Verify the VMM data range is contained in the page passed.
-    //
-    if ((Start >= Address) && (End <= (Address + Size))) {
-      return TRUE;
-    }
+  //
+  // Verify the page passed is contained in the VMM data range
+  // or the VMM data range is contained in the page passed.
+  //
+  if (((Address >= Start) && ((Address + Size) <= End))
+   || ((Start >= Address) && (End <= (Address + Size)))) {
+    return TRUE;
   }
   //
   // ASSERT there is no inter-page overlap.
@@ -461,7 +453,6 @@ InternalSplitAndUnmapPage (
   End     = (Start + Private->Size);
 
   Result = InternalSplitAndUnmapPageWorker (
-             Private,
              Address,
              Size,
              Start,
@@ -478,7 +469,6 @@ InternalSplitAndUnmapPage (
     for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
       MmioInfo = &ThreadContext->MmioInfo[Index];
       Result = InternalSplitAndUnmapPageWorker (
-                 Private,
                  Address,
                  Size,
                  MmioInfo->Address,
