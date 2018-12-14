@@ -643,7 +643,9 @@ AmdIntelEmuVirtualizeSystem (
   // Initialize Thread Contexts.
   //
   for (Index = 0; Index < Private.RuntimeContext.NumThreadContexts; ++Index) {
-    for (Index2 = 0; Index2 < ARRAY_SIZE (mInternalMmioAddresses); ++Index2) {
+    ThreadContexts[Index].NumMmioInfo = ARRAY_SIZE (mInternalMmioAddresses);
+
+    for (Index2 = 0; Index2 < ThreadContexts[Index].NumMmioInfo; ++Index2) {
       ThreadContexts[Index].MmioInfo[Index2].Address = mInternalMmioAddresses[Index2];
     }
   }
