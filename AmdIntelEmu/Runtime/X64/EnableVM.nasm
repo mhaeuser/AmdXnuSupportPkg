@@ -40,7 +40,7 @@ ASM_PFX (AmdIntelEmuInternalVmrun):
   push    rcx
   push    rbx          ; non-volatile for EFIAPI, but C code may access it.
   mov     rdx, rsp     ; Pass the registers' addresses.
-  sub     rsp, 0x80    ; shadow area (4 * 8 bytes) and XMM registers.
+  sub     rsp, 0x88    ; shadow area (4 * 8 bytes) and XMM registers (aligned).
   movaps  [rsp + 0x20], xmm0
   movaps  [rsp + 0x30], xmm1
   movaps  [rsp + 0x40], xmm2
@@ -57,7 +57,7 @@ ASM_PFX (AmdIntelEmuInternalVmrun):
   movaps  xmm2, [rsp + 0x40]
   movaps  xmm1, [rsp + 0x30]
   movaps  xmm0, [rsp + 0x20]
-  add     rsp, 0x80
+  add     rsp, 0x88
   pop     rbx
   pop     rcx
   pop     rdx
