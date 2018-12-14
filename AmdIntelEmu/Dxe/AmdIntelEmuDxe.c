@@ -506,6 +506,7 @@ InternalInitMsrPm (
   UINT8                                  *MsrPm;
   UINTN                                  Index;
   CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO *MsrIntercept;
+  UINT64                                 MsrTotalBit;
   UINT32                                 MsrIndex;
   UINT32                                 MsrBit;
   UINT32                                 MsrOffset;
@@ -538,9 +539,9 @@ InternalInitMsrPm (
       continue;
     }
 
-    MsrBit    = (MsrIndex * 2);
-    MsrOffset = (MsrBit / 8);
-    MsrBit    = (MsrBit % 8);
+    MsrTotalBit = ((UINT64)MsrIndex * 2);
+    MsrOffset   = (UINT32)(MsrTotalBit / 8);
+    MsrBit      = (UINT32)(MsrTotalBit % 8);
 
     ASSERT (MsrOffset < SIZE_2KB);
     ASSERT ((MsrIntercept->Read != NULL) || (MsrIntercept->Write != NULL));
