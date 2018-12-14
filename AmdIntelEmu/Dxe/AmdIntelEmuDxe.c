@@ -516,8 +516,14 @@ InternalInitMsrPm (
 
   ASSERT (Private->MsrIntercepts != NULL);
 
+  if (Private->NumMsrIntercepts == 0) {
+    return;
+  }
+
   MsrPm = (UINT8 *)(UINTN)Vmcb->MSRPM_BASE_PA;
   ASSERT (MsrPm != NULL);
+
+  Vmcb->InterceptMsrProt = 1;
 
   for (Index = 0; Index < Private->NumMsrIntercepts; ++Index) {
     MsrIntercept = &Private->MsrIntercepts[Index];
@@ -535,7 +541,6 @@ InternalInitMsrPm (
       //
       // The MSR is not covered by the MSR PM as of 24593 Rev 3.30.
       //
-      Vmcb->InterceptMsrProt = 1;
       continue;
     }
 
