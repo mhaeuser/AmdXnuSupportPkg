@@ -112,10 +112,9 @@ AmdIntelEmuInternalExceptionNpf (
   // Sanity-check the NPF error information.
   //
   DEBUG_CODE (
-    if ((ExitInfo1.Bits.FaultFinalAddress == 0)
-     || (ExitInfo1.Bits.FaultGuestTlb     != 0)
+    if (((ExitInfo1.Bits.FaultFinalAddress == 0)
+      && (ExitInfo1.Bits.FaultGuestTlb     == 0))
      || (ExitInfo1.Bits.P   != 0)
-     || (ExitInfo1.Bits.RW  == 0)
      || (ExitInfo1.Bits.RSV != 0)
      || (ExitInfo1.Bits.US  == 0)) {
       ASSERT (FALSE);

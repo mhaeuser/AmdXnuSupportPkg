@@ -284,9 +284,10 @@ typedef union {
     UINT32 US                : 1;
     UINT32 RSV               : 1;
     UINT32 ID                : 1;
-    UINT32 Reserved          : 25;
+    UINT32 Reserved1         : 27;
     UINT32 FaultFinalAddress : 1;
     UINT32 FaultGuestTlb     : 1;
+    UINT32 Reserved2         : 30;
   }      Bits;
   UINT32 Uint32;
   UINT64 Uint64;
