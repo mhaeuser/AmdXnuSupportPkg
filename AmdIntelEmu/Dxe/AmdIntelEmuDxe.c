@@ -926,7 +926,6 @@ InternalStartImage (
   EFI_TPL    OldTpl;
 
   if (InternalIsXnuBoot (ImageHandle)) {
-    AmdIntelEmuVirtualizeSystem ();
     //
     // Restore the original StartImage() function.
     //
@@ -937,6 +936,8 @@ InternalStartImage (
     gBS->Hdr.CRC32  = CalculateCrc32 (gBS, sizeof (*gBS));
 
     gBS->RestoreTPL (OldTpl);
+
+    AmdIntelEmuVirtualizeSystem ();
   }
 
   return mInternalStartImage (ImageHandle, ExitDataSize, ExitData);
