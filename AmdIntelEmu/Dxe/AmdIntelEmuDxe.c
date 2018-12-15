@@ -14,6 +14,7 @@
 
 #include "AmdIntelEmuDxe.h"
 
+
 #define NUM_STACK_PAGES  1U
 
 #define GET_PAGE(Address, Index)  \
@@ -28,19 +29,17 @@ typedef struct {
 } AMD_INTEL_EMU_THREAD_PRIVATE;
 
 typedef struct {
-  UINTN                                  Address;
-  UINTN                                  Size;
-  UINTN                                  BspNum;
-  AMD_INTEL_EMU_RUNTIME_CONTEXT          RuntimeContext;
-  AMD_INTEL_EMU_RUNTIME_ENTRY            RuntimeEntry;
-  UINTN                                  NumMsrIntercepts;
-  CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO *MsrIntercepts;
-  AMD_INTEL_EMU_THREAD_CONTEXT           *CurrentThreadContext;
-} AMD_INTEL_EMU_PRIVATE;
+  UINTN                        Address;
+  UINTN                        Size;
+  AMD_INTEL_EMU_THREAD_CONTEXT *CurrentThreadContext;
+} AMD_INTEL_EMU_PT_INIT_CONTEXT;
 
 STATIC CONST UINT64 mInternalMmioAddresses[] = {
   FixedPcdGet32 (PcdCpuLocalApicBaseAddress)
 };
+
+STATIC BOOLEAN mInternalNripSupport = FALSE;
+STATIC BOOLEAN mInternalNpSupport   = FALSE;
 
 STATIC
 BOOLEAN
@@ -449,19 +448,19 @@ InternalSplitAndUnmapPage (
   IN PAGE_TABLE_4K_ENTRY  *PageTableEntry4K  OPTIONAL
   )
 {
-  BOOLEAN                      Result;
+  BOOLEAN                             Result;
 
-  CONST AMD_INTEL_EMU_PRIVATE  *Private;
-  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
-  UINTN                        Start;
-  UINTN                        End;
-  UINTN                        Index;
-  AMD_INTEL_EMU_MMIO_INFO      *MmioInfo;
+  CONST AMD_INTEL_EMU_PT_INIT_CONTEXT *Private;
+  AMD_INTEL_EMU_THREAD_CONTEXT        *ThreadContext;
+  UINTN                               Start;
+  UINTN                               End;
+  UINTN                               Index;
+  AMD_INTEL_EMU_MMIO_INFO             *MmioInfo;
 
   ASSERT (Context != NULL);
   ASSERT (Size > 0);
 
-  Private = (AMD_INTEL_EMU_PRIVATE *)Context;
+  Private = (AMD_INTEL_EMU_PT_INIT_CONTEXT *)Context;
   Start   = Private->Address;
   End     = (Start + Private->Size);
 
@@ -498,8 +497,9 @@ InternalSplitAndUnmapPage (
 STATIC
 VOID
 InternalInitMsrPm (
-  IN     CONST AMD_INTEL_EMU_PRIVATE  *Private,
-  IN OUT AMD_VMCB_CONTROL_AREA        *Vmcb
+  IN     UINTN                                   NumMsrIntercepts,
+  IN     CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO  *MsrIntercepts,
+  IN OUT AMD_VMCB_CONTROL_AREA                   *Vmcb
   )
 {
   UINT8                                  *MsrPm;
@@ -510,22 +510,21 @@ InternalInitMsrPm (
   UINT32                                 MsrBit;
   UINT32                                 MsrOffset;
 
-  ASSERT (Private != NULL);
   ASSERT (Vmcb != NULL);
 
-  ASSERT (Private->MsrIntercepts != NULL);
-
-  if (Private->NumMsrIntercepts == 0) {
+  if (NumMsrIntercepts == 0) {
     return;
   }
+
+  ASSERT (MsrIntercepts != NULL);
 
   MsrPm = (UINT8 *)(UINTN)Vmcb->MSRPM_BASE_PA;
   ASSERT (MsrPm != NULL);
 
   Vmcb->InterceptMsrProt = 1;
 
-  for (Index = 0; Index < Private->NumMsrIntercepts; ++Index) {
-    MsrIntercept = &Private->MsrIntercepts[Index];
+  for (Index = 0; Index < NumMsrIntercepts; ++Index) {
+    MsrIntercept = &MsrIntercepts[Index];
 
     MsrIndex = MsrIntercept->MsrIndex;
     //
@@ -561,30 +560,134 @@ InternalInitMsrPm (
 }
 
 STATIC
-VOID
-AmdIntelEmuVirtualizeSystem (
-  IN OUT VOID  *Memory
+EFI_STATUS
+InternalPrepareAps (
+  OUT UINTN  *NumThreads,
+  OUT UINTN  *BspNum
   )
 {
-  AMD_INTEL_EMU_PRIVATE        Private;
-  AMD_INTEL_EMU_THREAD_PRIVATE ThreadPrivate;
-  VOID                         *IoPm;
-  VOID                         *MsrPm;
-  VOID                         *LapicMmioPage;
-  VOID                         *HostStacks;
-  VOID                         *HostVmcbs;
-  VOID                         *GuestVmcbs;
-  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContexts;
-  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
-  AMD_INTEL_EMU_THREAD_CONTEXT *BspThreadContext;
-  AMD_VMCB_CONTROL_AREA        *GuestVmcb;
-  AMD_VMCB_CONTROL_AREA        *VmcbWalker;
-  EFI_STATUS                   Status;
-  UINTN                        Index;
-  UINTN                        Index2;
-  EFI_PROCESSOR_INFORMATION    ProcessorInfo;
+  EFI_STATUS Status;
 
-  CopyMem (&Private, Memory, sizeof (Private));
+  UINTN      NumProcessors;
+  UINTN      NumEnabledProcessors;
+  UINTN      BspIndex;
+  UINTN      Index;
+
+  ASSERT (NumThreads != NULL);
+  ASSERT (BspNum != NULL);
+
+  if (PcdGetBool (PcdAmdIntelEmuVirtualizeAps)) {
+    Status = MpInitLibInitialize ();
+    ASSERT_EFI_ERROR (Status);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+
+    Status = MpInitLibGetNumberOfProcessors (
+               &NumProcessors,
+               &NumEnabledProcessors
+               );
+    ASSERT_EFI_ERROR (Status);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+
+    Status = MpInitLibWhoAmI (&BspIndex);
+    ASSERT_EFI_ERROR (Status);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+
+    if (NumEnabledProcessors != NumProcessors) {
+      for (Index = 0; Index < NumProcessors; ++Index) {
+        if (Index != BspIndex) {
+          Status = MpInitLibEnableDisableAP (Index, TRUE, NULL);
+          if (EFI_ERROR (Status)) {
+            DEBUG ((DEBUG_ERROR, "Failed to enable AP %lu.\n", (UINT64)Index));
+            return Status;
+          }
+        }
+      }
+
+      DEBUG ((DEBUG_INFO, "Successfully enabled %lu APs.\n", (UINT64)Index));
+    }
+
+    *NumThreads = NumProcessors;
+    *BspNum     = BspIndex;
+  } else {
+    *NumThreads = 1;
+    *BspNum     = 0;
+  }
+
+  return EFI_SUCCESS;
+}
+
+STATIC
+VOID
+AmdIntelEmuVirtualizeSystem (
+  VOID
+  )
+{
+  VOID                                   *Memory;
+  AMD_INTEL_EMU_THREAD_PRIVATE           ThreadPrivate;
+  AMD_INTEL_EMU_RUNTIME_CONTEXT          RuntimeContext;
+  AMD_INTEL_EMU_PT_INIT_CONTEXT          PtInitContext;
+  UINTN                                  NumMsrIntercepts;
+  CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO *MsrIntercepts;
+  AMD_INTEL_EMU_RUNTIME_ENTRY            RuntimeEntry;
+  UINTN                                  NumPages;
+  UINTN                                  NumProcessors;
+  UINTN                                  BspNum;
+  UINTN                                  MmioInfoSize;
+  VOID                                   *IoPm;
+  VOID                                   *MsrPm;
+  VOID                                   *LapicMmioPage;
+  VOID                                   *HostStacks;
+  VOID                                   *HostVmcbs;
+  VOID                                   *GuestVmcbs;
+  AMD_INTEL_EMU_THREAD_CONTEXT           *ThreadContexts;
+  AMD_INTEL_EMU_THREAD_CONTEXT           *ThreadContext;
+  AMD_INTEL_EMU_THREAD_CONTEXT           *BspThreadContext;
+  AMD_VMCB_CONTROL_AREA                  *GuestVmcb;
+  AMD_VMCB_CONTROL_AREA                  *VmcbWalker;
+  EFI_STATUS                             Status;
+  UINTN                                  Index;
+  UINTN                                  Index2;
+  EFI_PROCESSOR_INFORMATION              ProcessorInfo;
+
+  Status = InternalPrepareAps (&NumProcessors, &BspNum);
+  if (EFI_ERROR (Status)) {
+    ASSERT_EFI_ERROR (Status);
+    DEBUG ((DEBUG_ERROR, "Failed to prepare APs - %r.\n", Status));
+    return;
+  }
+
+  //
+  // TODO: Allocate the Runtime image and assign its entry point here.
+  //
+  RuntimeEntry = NULL;
+
+  //
+  // AmdIntelEmuVirtualizeSystem() assumes this size setup.
+  // Allocate at a 2 MB boundary so they will be covered by a single 2 MB Page
+  // Table entry.
+  // MSR map: 1 page, IO map: 3 pages, LAPIC MMIO: 1 page, VMCBs: 2 per thread.
+  //
+  NumPages     = (1 + 3 + 1 + (NumProcessors * (NUM_STACK_PAGES + 2)));
+  MmioInfoSize = (ARRAY_SIZE (mInternalMmioAddresses) * sizeof (AMD_INTEL_EMU_MMIO_INFO));
+  NumPages    += EFI_SIZE_TO_PAGES (
+                   NumProcessors
+                     * (sizeof (AMD_INTEL_EMU_THREAD_CONTEXT) + MmioInfoSize)
+                   );
+  Memory = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
+  if (Memory == NULL) {
+    DEBUG ((DEBUG_ERROR, "Failed to allocate the HV runtime memory.\n"));
+    return;
+  }
+
+  if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
+    InitializeCpuExceptionHandlers (NULL);
+  }
 
   //
   // VMRUN is available only at CPL-0.
@@ -604,17 +707,14 @@ AmdIntelEmuVirtualizeSystem (
   // The LAPIC MMIO page's high memory is unused.
   //
   HostStacks     = GET_PAGE (LapicMmioPage, 1);
-  HostVmcbs      = GET_PAGE (
-                     HostStacks,
-                     (Private.RuntimeContext.NumThreads * NUM_STACK_PAGES)
-                     );
-  GuestVmcbs     = GET_PAGE (HostVmcbs,  Private.RuntimeContext.NumThreads);
-  ThreadContexts = GET_PAGE (GuestVmcbs, Private.RuntimeContext.NumThreads);
+  HostVmcbs      = GET_PAGE (HostStacks, (NumProcessors * NUM_STACK_PAGES));
+  GuestVmcbs     = GET_PAGE (HostVmcbs,  NumProcessors);
+  ThreadContexts = GET_PAGE (GuestVmcbs, NumProcessors);
   //
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
   ZeroMem (MsrPm,      (4 * SIZE_4KB));
-  ZeroMem (GuestVmcbs, (Private.RuntimeContext.NumThreads * SIZE_4KB));
+  ZeroMem (GuestVmcbs, (NumProcessors * SIZE_4KB));
   //
   // Set up the generic VMCB used on all cores.
   //
@@ -632,26 +732,29 @@ AmdIntelEmuVirtualizeSystem (
   //
   // Perform NP initialization based on Runtime-returned information.
   //
-  if (Private.RuntimeContext.NpEnabled) {
+  if (mInternalNpSupport) {
     GuestVmcb->NP_ENABLE = 1;
   }
   //
   // Initialize the runtime environment.
   //
-  Private.RuntimeContext.ThreadContexts = ThreadContexts;
-  Private.RuntimeContext.LapicPage      = LapicMmioPage;
-  Private.RuntimeEntry (
-            &Private.RuntimeContext,
-            &ThreadPrivate.EnableVm,
-            &Private.NumMsrIntercepts,
-            &Private.MsrIntercepts
-            );
+  RuntimeContext.NumThreads     = NumProcessors;
+  RuntimeContext.NpEnabled      = mInternalNpSupport;
+  RuntimeContext.NripSupport    = mInternalNripSupport;
+  RuntimeContext.ThreadContexts = ThreadContexts;
+  RuntimeContext.LapicPage      = LapicMmioPage;
+  RuntimeEntry (
+    &RuntimeContext,
+    &ThreadPrivate.EnableVm,
+    &NumMsrIntercepts,
+    &MsrIntercepts
+    );
 
-  InternalInitMsrPm (&Private, GuestVmcb);
+  InternalInitMsrPm (NumMsrIntercepts, MsrIntercepts, GuestVmcb);
   //
   // Copy the template to all VMCBs.
   //
-  for (Index = 1; Index < Private.RuntimeContext.NumThreads; ++Index) {
+  for (Index = 1; Index < NumProcessors; ++Index) {
     VmcbWalker = GET_PAGE (GuestVmcbs, Index);
     CopyMem (VmcbWalker, GuestVmcb, SIZE_4KB);
     VmcbWalker->VmcbSaveState = ((UINT64)(UINTN)VmcbWalker + 0x400);
@@ -661,7 +764,7 @@ AmdIntelEmuVirtualizeSystem (
   //
   for (
     Index = 0, ThreadContext = ThreadContexts;
-    Index < Private.RuntimeContext.NumThreads;
+    Index < NumProcessors;
     ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
     ) {
     ThreadContext->NumMmioInfo = ARRAY_SIZE (mInternalMmioAddresses);
@@ -671,6 +774,9 @@ AmdIntelEmuVirtualizeSystem (
     }
   }
 
+  PtInitContext.Address = (UINTN)Memory;
+  PtInitContext.Size    = EFI_PAGES_TO_SIZE (NumPages);
+
   if (PcdGetBool (PcdAmdIntelEmuVirtualizeAps)) {
     //
     // Enable AP virtualization.
@@ -678,7 +784,7 @@ AmdIntelEmuVirtualizeSystem (
     BspThreadContext = NULL;
     for (
       Index = 0, ThreadContext = ThreadContexts;
-      Index < Private.RuntimeContext.NumThreads;
+      Index < NumProcessors;
       ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
       ) {
       GuestVmcb = GET_PAGE (GuestVmcbs, Index);
@@ -688,14 +794,14 @@ AmdIntelEmuVirtualizeSystem (
       // can operate in parallel.
       //
       if (GuestVmcb->NP_ENABLE != 0) {
-        Private.CurrentThreadContext = ThreadContext;
+        PtInitContext.CurrentThreadContext = ThreadContext;
         GuestVmcb->N_CR3 = CreateIdentityMappingPageTables (
-                             &Private,
+                             &PtInitContext,
                              InternalSplitAndUnmapPage
                              );
       }
 
-      if (Index == Private.BspNum) {
+      if (Index == BspNum) {
         BspThreadContext = ThreadContext;
         continue;
       }
@@ -734,16 +840,16 @@ AmdIntelEmuVirtualizeSystem (
     }
   } else {
     BspThreadContext       = ThreadContexts;
-    GuestVmcb              = GET_PAGE (GuestVmcbs, Private.BspNum);
+    GuestVmcb              = GET_PAGE (GuestVmcbs, BspNum);
     BspThreadContext->Vmcb = GuestVmcb;
     //
     // Every Guest VMCB needs its own Page Table so that MMIO interceptions
     // can operate in parallel.
     //
     if (GuestVmcb->NP_ENABLE != 0) {
-      Private.CurrentThreadContext = BspThreadContext;
+      PtInitContext.CurrentThreadContext = BspThreadContext;
       GuestVmcb->N_CR3 = CreateIdentityMappingPageTables (
-                           &Private,
+                           &PtInitContext,
                            InternalSplitAndUnmapPage
                            );
     }
@@ -753,10 +859,10 @@ AmdIntelEmuVirtualizeSystem (
   //
   ASSERT (BspThreadContext != NULL);
   ThreadPrivate.ThreadContext = BspThreadContext;
-  ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, Private.BspNum);
+  ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, BspNum);
   ThreadPrivate.HostStack     = GET_PAGE (
                                   HostStacks,
-                                  (Private.BspNum * NUM_STACK_PAGES)
+                                  (BspNum * NUM_STACK_PAGES)
                                   );
   InternalLaunchVmEnvironment (&ThreadPrivate);
 
@@ -773,68 +879,7 @@ InternalExitBootServices (
   )
 {
   ASSERT (Event != NULL);
-  ASSERT (Context != NULL);
-  AmdIntelEmuVirtualizeSystem (Context);
-}
-
-STATIC
-EFI_STATUS
-InternalPrepareAps (
-  OUT UINTN  *NumThreads,
-  OUT UINTN  *BspNum
-  )
-{
-  EFI_STATUS Status;
-
-  UINTN      NumProcessors;
-  UINTN      NumEnabledProcessors;
-  UINTN      BspIndex;
-  UINTN      Index;
-
-  if (PcdGetBool (PcdAmdIntelEmuVirtualizeAps)) {
-    Status = MpInitLibInitialize ();
-    ASSERT_EFI_ERROR (Status);
-    if (EFI_ERROR (Status)) {
-      return Status;
-    }
-
-    Status = MpInitLibGetNumberOfProcessors (
-               &NumProcessors,
-               &NumEnabledProcessors
-               );
-    ASSERT_EFI_ERROR (Status);
-    if (EFI_ERROR (Status)) {
-      return Status;
-    }
-
-    Status = MpInitLibWhoAmI (&BspIndex);
-    ASSERT_EFI_ERROR (Status);
-    if (EFI_ERROR (Status)) {
-      return Status;
-    }
-
-    if (NumEnabledProcessors != *NumThreads) {
-      for (Index = 0; Index < *NumThreads; ++Index) {
-        if (Index != BspIndex) {
-          Status = MpInitLibEnableDisableAP (Index, TRUE, NULL);
-          if (EFI_ERROR (Status)) {
-            DEBUG ((DEBUG_ERROR, "Failed to enable AP %lu.\n", (UINT64)Index));
-            return Status;
-          }
-        }
-      }
-
-      DEBUG ((DEBUG_INFO, "Successfully enabled %lu APs.\n", (UINT64)Index));
-    }
-
-    *NumThreads = NumProcessors;
-    *BspNum     = BspIndex;
-  } else {
-    *NumThreads = 1;
-    *BspNum     = 0;
-  }
-
-  return EFI_SUCCESS;
+  AmdIntelEmuVirtualizeSystem ();
 }
 
 EFI_STATUS
@@ -844,65 +889,18 @@ AmdIntelEmuDxeEntryPoint (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  BOOLEAN               NripSupport;
-  BOOLEAN               NpSupport;
-  UINTN                 NumPages;
-  AMD_INTEL_EMU_PRIVATE *Memory;
-  EFI_STATUS            Status;
-  UINTN                 NumProcessors;
-  UINTN                 BspNum;
-  EFI_EVENT             Event;
-  UINTN                 MmioInfoSize;
+  EFI_STATUS Status;
+  EFI_EVENT  Event;
 
-  if (!InternalIsSvmAvailable (&NripSupport, &NpSupport)) {
+  if (!InternalIsSvmAvailable (&mInternalNripSupport, &mInternalNpSupport)) {
     return EFI_UNSUPPORTED;
-  }
-
-  Status = InternalPrepareAps (&NumProcessors, &BspNum);
-  if (EFI_ERROR (Status)) {
-    ASSERT_EFI_ERROR (Status);
-    DEBUG ((DEBUG_ERROR, "Failed to prepare APs - %r.\n", Status));
-    return Status;
-  }
-
-  //
-  // TODO: Allocate the Runtime image and return its entry point into Memory.
-  //
-
-  //
-  // AmdIntelEmuVirtualizeSystem() assumes this size setup.
-  // Allocate at a 2 MB boundary so they will be covered by a single 2 MB Page
-  // Table entry.
-  // MSR map: 1 page, IO map: 3 pages, LAPIC MMIO: 1 page, VMCBs: 2 per thread.
-  //
-  NumPages     = (1 + 3 + 1 + (NumProcessors * (NUM_STACK_PAGES + 2)));
-  MmioInfoSize = (ARRAY_SIZE (mInternalMmioAddresses) * sizeof (AMD_INTEL_EMU_MMIO_INFO));
-  NumPages    += EFI_SIZE_TO_PAGES (
-                   NumProcessors
-                     * (sizeof (AMD_INTEL_EMU_THREAD_CONTEXT) + MmioInfoSize)
-                   );
-  Memory = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
-  if (Memory == NULL) {
-    DEBUG ((DEBUG_ERROR, "Failed to allocate the HV runtime memory.\n"));
-    return EFI_OUT_OF_RESOURCES;
-  }
-
-  Memory->Address                    = (UINTN)Memory;
-  Memory->Size                       = EFI_PAGES_TO_SIZE (NumPages);
-  Memory->BspNum                     = BspNum;
-  Memory->RuntimeContext.NumThreads  = NumProcessors;
-  Memory->RuntimeContext.NpEnabled   = NpSupport;
-  Memory->RuntimeContext.NripSupport = NripSupport;
-
-  if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
-    InitializeCpuExceptionHandlers (NULL);
   }
 
   if (PcdGetBool (PcdAmdIntelEmuImmediatelyVirtualize)) {
     //
     // Immediately virtualize the system in DEBUG builds to easen debugging.
     //
-    AmdIntelEmuVirtualizeSystem (Memory);
+    AmdIntelEmuVirtualizeSystem ();
     return EFI_SUCCESS;
   }
 
@@ -910,13 +908,12 @@ AmdIntelEmuDxeEntryPoint (
                   EVT_SIGNAL_EXIT_BOOT_SERVICES,
                   TPL_CALLBACK,
                   InternalExitBootServices,
-                  Memory,
+                  NULL,
                   &Event
                   );
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "Failed to create the HV ExitBS event.\n"));
-    FreeAlignedPages (Memory, NumPages);
     return Status;
   }
 
