@@ -777,28 +777,19 @@ InternalExitBootServices (
   AmdIntelEmuVirtualizeSystem (Context);
 }
 
+STATIC
 EFI_STATUS
-EFIAPI
-AmdIntelEmuDxeEntryPoint (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
+InternalPrepareAps (
+  OUT UINTN  *NumThreads,
+  OUT UINTN  *BspNum
   )
 {
-  BOOLEAN                  NripSupport;
-  BOOLEAN                  NpSupport;
-  UINTN                    NumPages;
-  AMD_INTEL_EMU_PRIVATE    *Memory;
-  EFI_STATUS               Status;
-  UINTN                    NumProcessors;
-  UINTN                    NumEnabledProcessors;
-  UINTN                    BspNum;
-  UINTN                    Index;
-  EFI_EVENT                Event;
-  UINTN                    MmioInfoSize;
+  EFI_STATUS Status;
 
-  if (!InternalIsSvmAvailable (&NripSupport, &NpSupport)) {
-    return EFI_UNSUPPORTED;
-  }
+  UINTN      NumProcessors;
+  UINTN      NumEnabledProcessors;
+  UINTN      BspIndex;
+  UINTN      Index;
 
   if (PcdGetBool (PcdAmdIntelEmuVirtualizeAps)) {
     Status = MpInitLibInitialize ();
@@ -816,15 +807,15 @@ AmdIntelEmuDxeEntryPoint (
       return Status;
     }
 
-    Status = MpInitLibWhoAmI (&BspNum);
+    Status = MpInitLibWhoAmI (&BspIndex);
     ASSERT_EFI_ERROR (Status);
     if (EFI_ERROR (Status)) {
       return Status;
     }
 
-    if (NumEnabledProcessors != NumProcessors) {
-      for (Index = 0; Index < NumProcessors; ++Index) {
-        if (Index != BspNum) {
+    if (NumEnabledProcessors != *NumThreads) {
+      for (Index = 0; Index < *NumThreads; ++Index) {
+        if (Index != BspIndex) {
           Status = MpInitLibEnableDisableAP (Index, TRUE, NULL);
           if (EFI_ERROR (Status)) {
             DEBUG ((DEBUG_ERROR, "Failed to enable AP %lu.\n", (UINT64)Index));
@@ -835,9 +826,43 @@ AmdIntelEmuDxeEntryPoint (
 
       DEBUG ((DEBUG_INFO, "Successfully enabled %lu APs.\n", (UINT64)Index));
     }
+
+    *NumThreads = NumProcessors;
+    *BspNum     = BspIndex;
   } else {
-    BspNum        = 0;
-    NumProcessors = 1;
+    *NumThreads = 1;
+    *BspNum     = 0;
+  }
+
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+AmdIntelEmuDxeEntryPoint (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  )
+{
+  BOOLEAN               NripSupport;
+  BOOLEAN               NpSupport;
+  UINTN                 NumPages;
+  AMD_INTEL_EMU_PRIVATE *Memory;
+  EFI_STATUS            Status;
+  UINTN                 NumProcessors;
+  UINTN                 BspNum;
+  EFI_EVENT             Event;
+  UINTN                 MmioInfoSize;
+
+  if (!InternalIsSvmAvailable (&NripSupport, &NpSupport)) {
+    return EFI_UNSUPPORTED;
+  }
+
+  Status = InternalPrepareAps (&NumProcessors, &BspNum);
+  if (EFI_ERROR (Status)) {
+    ASSERT_EFI_ERROR (Status);
+    DEBUG ((DEBUG_ERROR, "Failed to prepare APs - %r.\n", Status));
+    return Status;
   }
 
   //
