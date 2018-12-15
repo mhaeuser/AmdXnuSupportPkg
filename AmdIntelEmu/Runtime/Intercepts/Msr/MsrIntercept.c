@@ -190,7 +190,7 @@ AmdIntelEmuInternalReadMsrValue64 (
   ASSERT (Registers != NULL);
 
   Value  = (BitFieldRead64 (*Rax,           0, 31));
-  Value |= (BitFieldRead64 (Registers->Rdx, 0, 31) << 31U);
+  Value |= (BitFieldRead64 (Registers->Rdx, 0, 31) << 32U);
 
   return Value;
 }
