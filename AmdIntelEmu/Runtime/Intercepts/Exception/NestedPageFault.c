@@ -64,8 +64,10 @@ InternalExceptionNpfPostStep (
 
   Pte->Bits.Present              = 0;
   Pte->Bits.PageTableBaseAddress = Address;
-  Vmcb->TLB_CONTROL              = 0x03;
-  Vmcb->VmcbCleanBits.Bits.NP    = 0;
+  //
+  // TLB_CONTROL is not cached.
+  //
+  Vmcb->TLB_CONTROL = 0x03;
 }
 
 STATIC
@@ -135,8 +137,10 @@ AmdIntelEmuInternalExceptionNpf (
 
     Pte->Bits.Present              = 1;
     Pte->Bits.PageTableBaseAddress = Address;
-    Vmcb->TLB_CONTROL              = 0x03;
-    Vmcb->VmcbCleanBits.Bits.NP    = 0;
+    //
+    // TLB_CONTROL is not cached.
+    //
+    Vmcb->TLB_CONTROL = 0x03;
 
     AmdIntelEmuInternalSingleStepRip (
       ThreadContext,
