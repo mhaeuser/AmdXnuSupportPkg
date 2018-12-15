@@ -592,7 +592,7 @@ AmdIntelEmuInternalMmioLapic (
   IN UINT64  Address
   );
 
-extern CONST UINTN                          mInternalMmioNumHandlers;
-extern CONST AMD_INTEL_EMU_MMIO_HANDLER_MAP mInternalMmioHandlerMap[];
+extern CONST UINTN                    mInternalMmioNumHandlers;
+extern AMD_INTEL_EMU_MMIO_HANDLER_MAP mInternalMmioHandlerMap[];
 
 #endif // AMD_INTEL_EMU_H_

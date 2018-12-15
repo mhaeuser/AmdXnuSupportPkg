@@ -1,6 +1,7 @@
 #include <Base.h>
 
 #include <Library/DebugLib.h>
+#include <Library/PcdLib.h>
 
 #include "AmdIntelEmuRuntime.h"
 
@@ -81,6 +82,13 @@ _ModuleEntryPoint (
   //
   // Initialize the MMIO intercept handlers.
   //
+  for (Index = 0; Index < mInternalMmioNumHandlers; ++Index) {
+    if (mInternalMmioHandlerMap[Index].Address == PcdGet32 (PcdCpuLocalApicBaseAddress)) {
+      mInternalMmioHandlerMap[Index].Address = AmdIntelEmuGetLocalApicBaseAddress ();
+      break;
+    }
+  }
+
   for (
     Index = 0, ThreadContext = mInternalThreadContexts;
     Index < mInternalNumThreadContexts;

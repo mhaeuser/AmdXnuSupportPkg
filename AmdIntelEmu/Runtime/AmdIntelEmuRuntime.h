@@ -86,6 +86,17 @@ AmdIntelEmuReadLocalApicReg (
   IN UINTN  MmioOffset
   );
 
+/**
+  Retrieve the base address of local APIC.
+
+  @return The base address of local APIC.
+
+**/
+UINTN
+AmdIntelEmuGetLocalApicBaseAddress (
+  VOID
+  );
+
 extern BOOLEAN mAmdIntelEmuInternalNrip;
 extern BOOLEAN mAmdIntelEmuInternalNp;
 

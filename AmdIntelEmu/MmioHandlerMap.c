@@ -5,7 +5,7 @@
 #include "AmdIntelEmu.h"
 
 GLOBAL_REMOVE_IF_UNREFERENCED
-CONST AMD_INTEL_EMU_MMIO_HANDLER_MAP mInternalMmioHandlerMap[] = {
+AMD_INTEL_EMU_MMIO_HANDLER_MAP mInternalMmioHandlerMap[] = {
   {
     FixedPcdGet32 (PcdCpuLocalApicBaseAddress),
     AmdIntelEmuInternalMmioLapic
