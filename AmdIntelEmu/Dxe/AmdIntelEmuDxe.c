@@ -3,10 +3,13 @@
 #include <Register/Amd/Cpuid.h>
 #include <Register/Msr.h>
 
+#include <Protocol/LoadedImage.h>
+
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/CpuExceptionHandlerLib.h>
 #include <Library/DebugLib.h>
+#include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/MpInitLib.h>
 #include <Library/PcdLib.h>
@@ -40,6 +43,8 @@ STATIC CONST UINT64 mInternalMmioAddresses[] = {
 
 STATIC BOOLEAN mInternalNripSupport = FALSE;
 STATIC BOOLEAN mInternalNpSupport   = FALSE;
+
+STATIC EFI_IMAGE_START mInternalStartImage = NULL;
 
 STATIC
 BOOLEAN
@@ -871,15 +876,103 @@ AmdIntelEmuVirtualizeSystem (
   }
 }
 
-VOID
-EFIAPI
-InternalExitBootServices (
-  IN EFI_EVENT  Event,
-  IN VOID       *Context
+STATIC
+BOOLEAN
+InternalFileMatches (
+  IN UINTN                       BootPathSize,
+  IN CONST CHAR16                *BootPathName,
+  IN CONST FILEPATH_DEVICE_PATH  *Node
   )
 {
-  ASSERT (Event != NULL);
-  AmdIntelEmuVirtualizeSystem ();
+  UINTN PathSize;
+
+  ASSERT (BootPathSize > 1);
+  ASSERT (BootPathName != NULL);
+  ASSERT (Node != NULL);
+
+  PathSize     = StrSize (Node->PathName);
+  BootPathName = (Node->PathName + PathSize - BootPathSize);
+  if ((PathSize >= BootPathSize)
+    && ((PathSize == BootPathSize) || (*(BootPathName - 1) == L'\\'))
+    && (StrCmp (BootPathName, BootPathName) == 0)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+STATIC
+BOOLEAN
+InternalIsXnuBoot (
+  IN EFI_HANDLE  ImageHandle
+  )
+{
+  EFI_STATUS                     Status;
+  EFI_LOADED_IMAGE_PROTOCOL      *LoadedImage;
+  CONST EFI_DEVICE_PATH_PROTOCOL *Node;
+  CONST FILEPATH_DEVICE_PATH     *LastNode;
+
+  ASSERT (ImageHandle != NULL);
+
+  Status = gBS->HandleProtocol (
+                  ImageHandle,
+                  &gEfiLoadedImageProtocolGuid,
+                  (VOID **)&LoadedImage
+                  );
+  ASSERT_EFI_ERROR (Status);
+  if (!EFI_ERROR (Status) && (LoadedImage->FilePath != NULL)) {
+    LastNode = NULL;
+
+    for (
+      Node = LoadedImage->FilePath;
+      !IsDevicePathEnd (Node);
+      Node = NextDevicePathNode (Node)) {
+      if ((DevicePathType (Node)    == MEDIA_DEVICE_PATH)
+       && (DevicePathSubType (Node) == MEDIA_FILEPATH_DP)) {
+        LastNode = (FILEPATH_DEVICE_PATH *)Node;
+      }
+    }
+
+    if (LastNode != NULL) {
+      //
+      // Detect macOS by boot.efi/bootbase.efi in the bootloader name.
+      //
+      if (InternalFileMatches (sizeof (L"boot.efi"), L"boot.efi", LastNode)
+       || InternalFileMatches (sizeof (L"bootbase.efi"), L"bootbase.efi", LastNode)) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+STATIC
+EFI_STATUS
+EFIAPI
+InternalStartImage (
+  IN  EFI_HANDLE  ImageHandle,
+  OUT UINTN       *ExitDataSize,
+  OUT CHAR16      **ExitData    OPTIONAL
+  )
+{
+  EFI_TPL    OldTpl;
+
+  if (InternalIsXnuBoot (ImageHandle)) {
+    AmdIntelEmuVirtualizeSystem ();
+    //
+    // Restore the original StartImage() function.
+    //
+    OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+
+    gBS->Hdr.CRC32  = 0;
+    gBS->StartImage = mInternalStartImage;
+    gBS->Hdr.CRC32  = CalculateCrc32 (gBS, sizeof (*gBS));
+
+    gBS->RestoreTPL (OldTpl);
+  }
+
+  return mInternalStartImage (ImageHandle, ExitDataSize, ExitData);
 }
 
 EFI_STATUS
@@ -889,8 +982,7 @@ AmdIntelEmuDxeEntryPoint (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  EFI_STATUS Status;
-  EFI_EVENT  Event;
+  EFI_TPL OldTpl;
 
   if (!InternalIsSvmAvailable (&mInternalNripSupport, &mInternalNpSupport)) {
     return EFI_UNSUPPORTED;
@@ -903,19 +995,16 @@ AmdIntelEmuDxeEntryPoint (
     AmdIntelEmuVirtualizeSystem ();
     return EFI_SUCCESS;
   }
+  //
+  // Shim StartImage to virtualize the system on XNU bootloader startup.
+  //
+  OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
-  Status = gBS->CreateEvent (
-                  EVT_SIGNAL_EXIT_BOOT_SERVICES,
-                  TPL_CALLBACK,
-                  InternalExitBootServices,
-                  NULL,
-                  &Event
-                  );
-  ASSERT_EFI_ERROR (Status);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Failed to create the HV ExitBS event.\n"));
-    return Status;
-  }
+  gBS->Hdr.CRC32  = 0;
+  gBS->StartImage = InternalStartImage;
+  gBS->Hdr.CRC32  = CalculateCrc32 (gBS, sizeof (*gBS));
+
+  gBS->RestoreTPL (OldTpl);
 
   return EFI_SUCCESS;
 }
