@@ -10,7 +10,8 @@
 VOID
 AmdIntelEmuInternalRdmsrCoreThreadCount (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
   MSR_HASWELL_E_CORE_THREAD_COUNT_REGISTER CoreThreadCountMsr;
@@ -53,11 +54,10 @@ AmdIntelEmuInternalRdmsrCoreThreadCount (
 VOID
 AmdIntelEmuInternalWrmsrCoreThreadCount (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
-  ASSERT (SaveState != NULL);
-  ASSERT (Registers != NULL);
   //
   // THREAD_CORE_COUNT is read-only.
   //

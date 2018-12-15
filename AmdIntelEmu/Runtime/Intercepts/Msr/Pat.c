@@ -10,10 +10,14 @@
 VOID
 AmdIntelEmuInternalRdmsrPat (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
   UINT64 Value;
+
+  ASSERT (SaveState != NULL);
+  ASSERT (Registers != NULL);
 
   if (mAmdIntelEmuInternalNp) {
     Value = SaveState->G_PAT;
@@ -27,13 +31,15 @@ AmdIntelEmuInternalRdmsrPat (
 VOID
 AmdIntelEmuInternalWrmsrPat (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
   MSR_IA32_PAT_REGISTER PatMsr;
 
   ASSERT (SaveState != NULL);
   ASSERT (Registers != NULL);
+  ASSERT (CleanField != NULL);
   //
   // Undocumented fix by Bronya: Force WT-by-default PAT1 and PAT5 entries into
   // WC mode.  This is also done in the Linux kernel.
@@ -49,7 +55,8 @@ AmdIntelEmuInternalWrmsrPat (
     //
     // Inform the Guest of the new PAT for when Nested Paging is used.
     //
-    SaveState->G_PAT = PatMsr.Uint64;
+    SaveState->G_PAT    = PatMsr.Uint64;
+    CleanField->Bits.NP = 0;
   } else {
     AsmWriteMsr64 (MSR_IA32_PAT, PatMsr.Uint64);
   }

@@ -10,20 +10,20 @@
 
 VOID
 AmdEmuInterceptCpuid (
-  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   );
 
 VOID
 AmdIntelEmuInternalInterceptRdmsr (
-  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   );
 
 VOID
 AmdIntelEmuInternalInterceptWrmsr (
-  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   );
 
 VOID
@@ -299,8 +299,9 @@ AmdIntelEmuInternalInterceptionHandler (
   IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   )
 {
-  AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
-  
+  ASSERT (Vmcb != NULL);
+  ASSERT (Registers != NULL);
+
   Vmcb->EVENTINJ.Uint64 = 0;
   //
   // For forward compatibility, if the hypervisor has not modified the VMCB,
@@ -309,9 +310,6 @@ AmdIntelEmuInternalInterceptionHandler (
   // below as explicitly uncached.
   //
   Vmcb->VmcbCleanBits.Uint32 = MAX_UINT32;
-
-  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
-  ASSERT (SaveState != NULL);
 
   switch (Vmcb->EXITCODE) {
     case VMEXIT_EXCP_UD:
@@ -340,7 +338,7 @@ AmdIntelEmuInternalInterceptionHandler (
 
     case VMEXIT_CPUID:
     {
-      AmdEmuInterceptCpuid (SaveState, Registers);
+      AmdEmuInterceptCpuid (Vmcb, Registers);
       InternalRaiseRipNonJmp (Vmcb);
       break;
     }
@@ -348,10 +346,10 @@ AmdIntelEmuInternalInterceptionHandler (
     case VMEXIT_MSR:
     {
       if (Vmcb->EXITINFO1 == 0) {
-        AmdIntelEmuInternalInterceptRdmsr (SaveState, Registers);
+        AmdIntelEmuInternalInterceptRdmsr (Vmcb, Registers);
       } else {
         ASSERT (Vmcb->EXITINFO1 == 1);
-        AmdIntelEmuInternalInterceptWrmsr (SaveState, Registers);
+        AmdIntelEmuInternalInterceptWrmsr (Vmcb, Registers);
       }
 
       InternalRaiseRipNonJmp (Vmcb);

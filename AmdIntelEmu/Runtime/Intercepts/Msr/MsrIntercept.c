@@ -10,73 +10,85 @@
 VOID
 AmdIntelEmuInternalRdmsrPat (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalWrmsrPat (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalRdmsrMiscEnable (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalWrmsrMiscEnable (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalRdmsrPlatformId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalWrmsrPlatformId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalRdmsrBiosSignId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalWrmsrBiosSignId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalRdmsrCoreThreadCount (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalWrmsrCoreThreadCount (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalRdmsrX2apicVersion (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 VOID
 AmdIntelEmuInternalWrmsrX2apicVersion (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   );
 
 GLOBAL_REMOVE_IF_UNREFERENCED
@@ -119,13 +131,17 @@ CONST UINTN mAmdIntelEmuInternalNumMsrIntercepts =
 
 VOID
 AmdIntelEmuInternalInterceptRdmsr (
-  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   )
 {
+  AMD_VMCB_SAVE_STATE_AREA_NON_ES        *SaveState;
   UINT32                                 MsrIndex;
   UINTN                                  Index;
   CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO *MsrIntercept;
+
+  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
 
   MsrIndex = (UINT32)Registers->Rcx;
 
@@ -133,7 +149,7 @@ AmdIntelEmuInternalInterceptRdmsr (
     MsrIntercept = &mAmdIntelEmuInternalMsrIntercepts[Index];
     if (MsrIntercept->MsrIndex == MsrIndex) {
       if (MsrIntercept->Read != NULL) {
-        MsrIntercept->Read (SaveState, Registers);
+        MsrIntercept->Read (SaveState, Registers, &Vmcb->VmcbCleanBits);
         return;
       }
 
@@ -150,13 +166,17 @@ AmdIntelEmuInternalInterceptRdmsr (
 
 VOID
 AmdIntelEmuInternalInterceptWrmsr (
-  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   )
 {
+  AMD_VMCB_SAVE_STATE_AREA_NON_ES        *SaveState;
   UINT32                                 MsrIndex;
   UINTN                                  Index;
   CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO *MsrIntercept;
+
+  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
 
   MsrIndex = (UINT32)Registers->Rcx;
 
@@ -164,7 +184,7 @@ AmdIntelEmuInternalInterceptWrmsr (
     MsrIntercept = &mAmdIntelEmuInternalMsrIntercepts[Index];
     if (MsrIntercept->MsrIndex == MsrIndex) {
       if (MsrIntercept->Write != NULL) {
-        MsrIntercept->Write (SaveState, Registers);
+        MsrIntercept->Write (SaveState, Registers, &Vmcb->VmcbCleanBits);
         return;
       }
 

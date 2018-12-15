@@ -49,19 +49,23 @@ AmdEmuInterceptCpuidVmm (
 
 VOID
 AmdEmuInterceptCpuid (
-  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
+  IN OUT AMD_INTEL_EMU_REGISTERS  *Registers
   )
 {
-  UINT32 CpuidIndex;
+  AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  UINT32                          CpuidIndex;
 
   UINT32 Eax;
   UINT32 Ebx;
   UINT32 Ecx;
   UINT32 Edx;
 
-  ASSERT (SaveState != NULL);
+  ASSERT (Vmcb != NULL);
   ASSERT (Registers != NULL);
+
+  SaveState = (AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
 
   CpuidIndex = (UINT32)SaveState->RAX;
 

@@ -10,7 +10,8 @@
 VOID
 AmdIntelEmuInternalRdmsrMiscEnable (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
   MSR_IA32_MISC_ENABLE_REGISTER       MiscEnableMsr;
@@ -39,7 +40,8 @@ AmdIntelEmuInternalRdmsrMiscEnable (
 VOID
 AmdIntelEmuInternalWrmsrMiscEnable (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
   MSR_IA32_MISC_ENABLE_REGISTER       MiscEnableMsr;

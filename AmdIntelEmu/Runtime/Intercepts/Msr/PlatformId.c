@@ -9,7 +9,8 @@
 VOID
 AmdIntelEmuInternalRdmsrPlatformId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
   MSR_IA32_PLATFORM_ID_REGISTER PlatformIdMsr;
@@ -29,11 +30,10 @@ AmdIntelEmuInternalRdmsrPlatformId (
 VOID
 AmdIntelEmuInternalWrmsrPlatformId (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers,
+  OUT    AMD_VMCB_CLEAN_FIELD             *CleanField
   )
 {
-  ASSERT (SaveState != NULL);
-  ASSERT (Registers != NULL);
   //
   // PLATFORM_ID is read-only.
   //
