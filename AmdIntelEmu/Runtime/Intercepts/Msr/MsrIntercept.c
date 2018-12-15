@@ -8,6 +8,12 @@
 #include "../../AmdIntelEmuRuntime.h"
 
 VOID
+AmdIntelEmuInternalRdmsrPat (
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  );
+
+VOID
 AmdIntelEmuInternalWrmsrPat (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
   IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
@@ -77,7 +83,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED
 CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO mAmdIntelEmuInternalMsrIntercepts[] = {
   {
     MSR_IA32_PAT,
-    NULL,
+    AmdIntelEmuInternalRdmsrPat,
     AmdIntelEmuInternalWrmsrPat
   },
   {

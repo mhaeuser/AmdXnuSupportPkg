@@ -8,6 +8,23 @@
 #include "../../AmdIntelEmuRuntime.h"
 
 VOID
+AmdIntelEmuInternalRdmsrPat (
+  IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
+  IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
+  )
+{
+  UINT64 Value;
+
+  if (mAmdIntelEmuInternalNp) {
+    Value = SaveState->G_PAT;
+  } else {
+    Value = AsmReadMsr64 (MSR_IA32_PAT);
+  }
+
+  AmdIntelEmuInternalWriteMsrValue64 (&SaveState->RAX, Registers, Value);
+}
+
+VOID
 AmdIntelEmuInternalWrmsrPat (
   IN OUT AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
   IN OUT AMD_INTEL_EMU_REGISTERS          *Registers
