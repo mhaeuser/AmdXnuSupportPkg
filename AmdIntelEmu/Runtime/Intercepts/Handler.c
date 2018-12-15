@@ -88,7 +88,7 @@ InternalRaiseRipNonJmp (
     SaveState->RIP = Vmcb->nRIP;
   } else {
     AmdIntelEmuInternalGetRipInstruction (SaveState, &Instruction);
-    ASSERT ((Instruction.flags & F_ERROR) != 0);
+    ASSERT ((Instruction.flags & F_ERROR) == 0);
     SaveState->RIP += Instruction.len;
   }
 }
