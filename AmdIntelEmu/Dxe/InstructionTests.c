@@ -67,11 +67,11 @@ AmdIntelEmuRunTestIntercepts (
   DEBUG ((DEBUG_VERBOSE, "MSR_IA32_X2APIC_VERSION.\n"));
   InternalTestMsr (MSR_IA32_X2APIC_VERSION);
 
-  DEBUG ((DEBUG_VERBOSE, "LAPIC MMIO test."));
+  DEBUG ((DEBUG_VERBOSE, "LAPIC MMIO test.\n"));
 
   Value1 = *(volatile UINT32 *)(UINTN)0xFEE00030U;
 
-  DEBUG ((DEBUG_VERBOSE, ".. "));
+  DEBUG ((DEBUG_VERBOSE, "Value to test against: 0x%x... ", Value1));
 
   for (Index = 0; Index < 50; ++Index) {
     Value2 = *(volatile UINT32 *)(UINTN)0xFEE00030U;
