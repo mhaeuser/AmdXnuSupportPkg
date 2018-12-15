@@ -2,6 +2,7 @@
 
 #include <Protocol/DebugSupport.h>
 
+#include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 
@@ -240,6 +241,57 @@ InternalHandleEvents (
   }
 }
 
+STATIC
+VOID
+InternalVmcbSanityCheck (
+  IN CONST AMD_VMCB_CONTROL_AREA  *Vmcb
+  )
+{
+  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
+  MSR_AMD_EFER_REGISTER                 EferRegister;
+  IA32_CR0                              Cr0;
+  IA32_CR4                              Cr4;
+  IA32_SEGMENT_ATTRIBUTES               CsAttributes;
+
+  ASSERT (Vmcb != NULL);
+
+  SaveState = (CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES *)(UINTN)Vmcb->VmcbSaveState;
+  ASSERT (SaveState != NULL);
+
+  EferRegister.Uint64 = SaveState->EFER;
+  Cr0.UintN           = (UINTN)SaveState->CR0;
+  Cr4.UintN           = (UINTN)SaveState->CR4;
+  CsAttributes.Uint16 = SaveState->CS.Attributes;
+
+  ASSERT (EferRegister.Bits.SVME != 0);
+
+  ASSERT ((Cr4.Bits.Reserved_0 == 0) && (Cr4.Bits.Reserved_1 == 0));
+  ASSERT (BitFieldRead64 (SaveState->DR6, 32, 63) == 0);
+  ASSERT (BitFieldRead64 (SaveState->DR7, 32, 63) == 0);
+  ASSERT (
+      (EferRegister.Bits.Reserved1 == 0)
+   && (EferRegister.Bits.Reserved2 == 0)
+   && (EferRegister.Bits.Reserved3 == 0)
+   && (EferRegister.Bits.Reserved4 == 0)
+    );
+  ASSERT (
+      (Cr4.Bits.PAE != 0)
+   || ((EferRegister.Bits.LME == 0) || (Cr0.Bits.PG == 0))
+    );
+  ASSERT (
+      (Cr0.Bits.PE != 0)
+   || ((EferRegister.Bits.LME == 0) || (Cr0.Bits.PG == 0))
+    );
+  ASSERT (
+      (EferRegister.Bits.LME == 0)
+   || (Cr0.Bits.PG == 0)
+   || (Cr4.Bits.PAE == 0)
+   || (CsAttributes.Bits.DB == 0)
+    );
+  ASSERT (Vmcb->InterceptVmrun != 0);
+  ASSERT (Vmcb->GuestAsid != 0);
+}
+
 AMD_VMCB_CONTROL_AREA *
 EFIAPI
 AmdIntelEmuInternalInterceptionHandler (
@@ -321,6 +373,8 @@ AmdIntelEmuInternalInterceptionHandler (
   }
 
   InternalHandleEvents (Vmcb);
+
+  InternalVmcbSanityCheck (Vmcb);
   //
   // Return Vmcb so it is loaded into rax when returning to the vmrun loop.
   //
