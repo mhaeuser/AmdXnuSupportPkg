@@ -51,9 +51,11 @@ AmdIntelEmuRunTestIntercepts (
   AsmCpuid (0x40000000, NULL, NULL, NULL, NULL);
   DEBUG ((DEBUG_VERBOSE, "CPUID Leaf 40000010.\n"));
   AsmCpuid (0x40000010, NULL, NULL, NULL, NULL);
-
+  //
+  // Avoid the verification as the write interception alters the data.
+  //
   DEBUG ((DEBUG_VERBOSE, "MSR_IA32_PAT.\n"));
-  InternalTestMsr (MSR_IA32_PAT);
+  AsmWriteMsr64 (MSR_IA32_PAT, AsmReadMsr64 (MSR_IA32_PAT));
   DEBUG ((DEBUG_VERBOSE, "MSR_IA32_MISC_ENABLE.\n"));
   InternalTestMsr (MSR_IA32_MISC_ENABLE);
   DEBUG ((DEBUG_VERBOSE, "MSR_IA32_PLATFORM_ID.\n"));
