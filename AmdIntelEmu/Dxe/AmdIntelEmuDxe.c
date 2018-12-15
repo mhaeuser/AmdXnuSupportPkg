@@ -850,6 +850,15 @@ AmdIntelEmuDxeEntryPoint (
   Memory->RuntimeContext.NumThreads  = NumProcessors;
   Memory->RuntimeContext.NpEnabled   = NpSupport;
   Memory->RuntimeContext.NripSupport = NripSupport;
+
+  DEBUG_CODE (
+    //
+    // Immediately virtualize the system in DEBUG builds to easen debugging.
+    //
+    AmdIntelEmuVirtualizeSystem (Memory);
+    return EFI_SUCCESS;
+    );
+
   Status = gBS->CreateEvent (
                   EVT_SIGNAL_EXIT_BOOT_SERVICES,
                   TPL_CALLBACK,
