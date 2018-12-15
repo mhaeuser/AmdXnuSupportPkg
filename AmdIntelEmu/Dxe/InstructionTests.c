@@ -1,9 +1,13 @@
 #include <Base.h>
 
+#include <Register/LocalApic.h>
 #include <Register/Msr.h>
 
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
+#include <Library/IoLib.h>
+
+#include "../AmdIntelEmu.h"
 
 STATIC
 VOID
@@ -38,6 +42,7 @@ AmdIntelEmuRunTestIntercepts (
   UINT32 Value1;
   UINT32 Value2;
   UINT32 Index;
+  UINTN  LapicBase;
 
   DEBUG ((DEBUG_VERBOSE, "CPUID Leaf 0.\n"));
   AsmCpuid (0, NULL, NULL, NULL, NULL);
@@ -69,12 +74,17 @@ AmdIntelEmuRunTestIntercepts (
 
   DEBUG ((DEBUG_VERBOSE, "LAPIC MMIO test.\n"));
 
-  Value1 = *(volatile UINT32 *)(UINTN)0xFEE00030U;
+  Value1 = AmdIntelEmuReadLocalApicReg (XAPIC_VERSION_OFFSET);
+  ASSERT ((Value1 & 0xFFU) == 0x14);
+
+  LapicBase = AmdIntelEmuGetLocalApicBaseAddress ();
+  Value1    = MmioRead32 (LapicBase + XAPIC_VERSION_OFFSET);
+  ASSERT ((Value1 & 0xFFU) == 0x14);
 
   DEBUG ((DEBUG_VERBOSE, "Value to test against: 0x%x... ", Value1));
 
   for (Index = 0; Index < 50; ++Index) {
-    Value2 = *(volatile UINT32 *)(UINTN)0xFEE00030U;
+    Value2 = MmioRead32 (LapicBase + XAPIC_VERSION_OFFSET);
     if (Value1 != Value2) {
       DEBUG ((DEBUG_VERBOSE, "ERROR!!!\n"));
       return;

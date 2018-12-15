@@ -67,36 +67,6 @@ AmdIntelEmuInternalInitializeMmioInfo (
   IN OUT AMD_INTEL_EMU_MMIO_INFO  *MmioInfo
   );
 
-/**
-  Read from a local APIC register.
-
-  This function reads from a local APIC register either in xAPIC or x2APIC mode.
-  It is required that in xAPIC mode wider registers (64-bit or 256-bit) must be
-  accessed using multiple 32-bit loads or stores, so this function only performs
-  32-bit read.
-
-  @param  MmioOffset  The MMIO offset of the local APIC register in xAPIC mode.
-                      It must be 16-byte aligned.
-
-  @return 32-bit      Value read from the register.
-
-**/
-UINT32
-AmdIntelEmuReadLocalApicReg (
-  IN UINTN  MmioOffset
-  );
-
-/**
-  Retrieve the base address of local APIC.
-
-  @return The base address of local APIC.
-
-**/
-UINTN
-AmdIntelEmuGetLocalApicBaseAddress (
-  VOID
-  );
-
 extern BOOLEAN mAmdIntelEmuInternalNrip;
 extern BOOLEAN mAmdIntelEmuInternalNp;
 

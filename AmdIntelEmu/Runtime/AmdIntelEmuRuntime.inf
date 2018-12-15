@@ -33,9 +33,9 @@
 [Sources]
   AmdIntelEmuRuntime.c
 
+  ../LocalApic.c
   ../MmioHandlerMap.c
 
-  LocalApic.c
   hde/hde64.c
 
   Intercepts/Handler.c

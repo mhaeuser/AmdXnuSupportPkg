@@ -41,6 +41,7 @@
   DebugLib
   DevicePathLib
   HobLib
+  IoLib
   MemoryAllocationLib
   MpInitLib
   UefiBootServicesTableLib
@@ -53,6 +54,8 @@
 
   InstructionTests.c
   MmioHandlerMapDummys.c
+
+  ../LocalApic.c
   ../MmioHandlerMap.c
 
 
