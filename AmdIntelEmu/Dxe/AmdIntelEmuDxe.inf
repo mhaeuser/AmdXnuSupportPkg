@@ -20,14 +20,14 @@
 
 [Packages]
   MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
   UefiCpuPkg/UefiCpuPkg.dec
   AmdXnuSupportPkg/AmdXnuSupportPkg.dec
 
-  MdeModulePkg/MdeModulePkg.dec
-
 [Pcd]
-  gUefiCpuPkgTokenSpaceGuid.PcdCpuLocalApicBaseAddress        ## CONSUMES
-  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuVirtualizeAps  ## CONSUMES
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuLocalApicBaseAddress                   ## CONSUMES
+  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuVirtualizeAps            ## CONSUMES
+  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuInitCpuExceptionHandler  ## CONSUMES
 
 [Protocols]
   gEfiMpServiceProtocolGuid  ## CONSUMES
@@ -35,6 +35,7 @@
 [LibraryClasses]
   BaseLib
   BaseMemoryLib
+  CpuExceptionHandlerLib
   DebugLib
   HobLib
   MemoryAllocationLib

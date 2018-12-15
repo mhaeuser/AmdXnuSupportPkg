@@ -5,6 +5,7 @@
 
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/CpuExceptionHandlerLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/MpInitLib.h>
@@ -790,6 +791,10 @@ AmdIntelEmuDxeEntryPoint (
   UINTN                    Index;
   EFI_EVENT                Event;
   UINTN                    MmioInfoSize;
+
+  if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
+    InitializeCpuExceptionHandlers (NULL);
+  }
 
   if (!InternalIsSvmAvailable (&NripSupport, &NpSupport)) {
     return EFI_UNSUPPORTED;
