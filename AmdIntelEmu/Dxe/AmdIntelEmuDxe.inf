@@ -21,9 +21,13 @@
 [Packages]
   MdePkg/MdePkg.dec
   UefiCpuPkg/UefiCpuPkg.dec
+  AmdXnuSupportPkg/AmdXnuSupportPkg.dec
+
+  MdeModulePkg/MdeModulePkg.dec
 
 [Pcd]
-  gUefiCpuPkgTokenSpaceGuid.PcdCpuLocalApicBaseAddress  ## CONSUMES
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuLocalApicBaseAddress        ## CONSUMES
+  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuVirtualizeAps  ## CONSUMES
 
 [Protocols]
   gEfiMpServiceProtocolGuid  ## CONSUMES

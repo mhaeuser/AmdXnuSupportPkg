@@ -669,65 +669,83 @@ AmdIntelEmuVirtualizeSystem (
       ThreadContext->MmioInfo[Index2].Address = mInternalMmioAddresses[Index2];
     }
   }
-  //
-  // Enable AP virtualization.
-  //
-  BspThreadContext = NULL;
-  for (
-    Index = 0, ThreadContext = ThreadContexts;
-    Index < Private.RuntimeContext.NumThreads;
-    ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
-    ) {
-    GuestVmcb = GET_PAGE (GuestVmcbs, Index);
-    ThreadContext->Vmcb = GuestVmcb;
+
+  if (PcdGetBool (PcdAmdIntelEmuVirtualizeAps)) {
+    //
+    // Enable AP virtualization.
+    //
+    BspThreadContext = NULL;
+    for (
+      Index = 0, ThreadContext = ThreadContexts;
+      Index < Private.RuntimeContext.NumThreads;
+      ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
+      ) {
+      GuestVmcb = GET_PAGE (GuestVmcbs, Index);
+      ThreadContext->Vmcb = GuestVmcb;
+      //
+      // Every Guest VMCB needs its own Page Table so that MMIO interceptions
+      // can operate in parallel.
+      //
+      if (GuestVmcb->NP_ENABLE != 0) {
+        Private.CurrentThreadContext = ThreadContext;
+        GuestVmcb->N_CR3 = CreateIdentityMappingPageTables (
+                             &Private,
+                             InternalSplitAndUnmapPage
+                             );
+      }
+
+      if (Index == Private.BspNum) {
+        BspThreadContext = ThreadContext;
+        continue;
+      }
+
+      Status = MpInitLibGetProcessorInfo (
+                 Index,
+                 &ProcessorInfo,
+                 NULL
+                 );
+      ASSERT_EFI_ERROR (Status);
+      if (EFI_ERROR (Status)
+       || ((ProcessorInfo.StatusFlag & PROCESSOR_ENABLED_BIT) == 0)) {
+        ASSERT (FALSE);
+        continue;
+      }
+      //
+      // Pages are identity-mapped across all cores and the APs are only going to
+      // read data, hence using stack memory is safe.
+      //
+      ThreadPrivate.ThreadContext = ThreadContext;
+      ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, Index);
+      ThreadPrivate.HostStack     = GET_PAGE (
+                                      HostStacks,
+                                      (Index * NUM_STACK_PAGES)
+                                      );
+      ThreadPrivate.TscStamp = AsmReadTsc ();
+      Status = MpInitLibStartupThisAP (
+                 InternalVirtualizeAp,
+                 Index,
+                 NULL,
+                 0,
+                 &ThreadPrivate,
+                 NULL
+                 );
+      ASSERT_EFI_ERROR (Status);
+    }
+  } else {
+    BspThreadContext       = ThreadContexts;
+    GuestVmcb              = GET_PAGE (GuestVmcbs, Private.BspNum);
+    BspThreadContext->Vmcb = GuestVmcb;
     //
     // Every Guest VMCB needs its own Page Table so that MMIO interceptions
     // can operate in parallel.
     //
     if (GuestVmcb->NP_ENABLE != 0) {
-      Private.CurrentThreadContext = ThreadContext;
+      Private.CurrentThreadContext = BspThreadContext;
       GuestVmcb->N_CR3 = CreateIdentityMappingPageTables (
                            &Private,
                            InternalSplitAndUnmapPage
                            );
     }
-
-    if (Index == Private.BspNum) {
-      BspThreadContext = ThreadContext;
-      continue;
-    }
-
-    Status = MpInitLibGetProcessorInfo (
-               Index,
-               &ProcessorInfo,
-               NULL
-               );
-    ASSERT_EFI_ERROR (Status);
-    if (EFI_ERROR (Status)
-     || ((ProcessorInfo.StatusFlag & PROCESSOR_ENABLED_BIT) == 0)) {
-      ASSERT (FALSE);
-      continue;
-    }
-    //
-    // Pages are identity-mapped across all cores and the APs are only going to
-    // read data, hence using stack memory is safe.
-    //
-    ThreadPrivate.ThreadContext = ThreadContext;
-    ThreadPrivate.HostVmcb      = GET_PAGE (HostVmcbs, Index);
-    ThreadPrivate.HostStack     = GET_PAGE (
-                                    HostStacks,
-                                    (Index * NUM_STACK_PAGES)
-                                    );
-    ThreadPrivate.TscStamp = AsmReadTsc ();
-    Status = MpInitLibStartupThisAP (
-               InternalVirtualizeAp,
-               Index,
-               NULL,
-               0,
-               &ThreadPrivate,
-               NULL
-               );
-    ASSERT_EFI_ERROR (Status);
   }
   //
   // Enable BSP virtualization.
@@ -777,39 +795,44 @@ AmdIntelEmuDxeEntryPoint (
     return EFI_UNSUPPORTED;
   }
 
-  Status = MpInitLibInitialize ();
-  ASSERT_EFI_ERROR (Status);
-  if (EFI_ERROR (Status)) {
-    return Status;
-  }
-
-  Status = MpInitLibGetNumberOfProcessors (
-             &NumProcessors,
-             &NumEnabledProcessors
-             );
-  ASSERT_EFI_ERROR (Status);
-  if (EFI_ERROR (Status)) {
-    return Status;
-  }
-
-  Status = MpInitLibWhoAmI (&BspNum);
-  ASSERT_EFI_ERROR (Status);
-  if (EFI_ERROR (Status)) {
-    return Status;
-  }
-
-  if (NumEnabledProcessors != NumProcessors) {
-    for (Index = 0; Index < NumProcessors; ++Index) {
-      if (Index != BspNum) {
-        Status = MpInitLibEnableDisableAP (Index, TRUE, NULL);
-        if (EFI_ERROR (Status)) {
-          DEBUG ((DEBUG_ERROR, "Failed to enable AP %lu.\n", (UINT64)Index));
-          return Status;
-        }
-      }
+  if (PcdGetBool (PcdAmdIntelEmuVirtualizeAps)) {
+    Status = MpInitLibInitialize ();
+    ASSERT_EFI_ERROR (Status);
+    if (EFI_ERROR (Status)) {
+      return Status;
     }
 
-    DEBUG ((DEBUG_INFO, "Successfully enabled %lu APs.\n", (UINT64)Index));
+    Status = MpInitLibGetNumberOfProcessors (
+               &NumProcessors,
+               &NumEnabledProcessors
+               );
+    ASSERT_EFI_ERROR (Status);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+
+    Status = MpInitLibWhoAmI (&BspNum);
+    ASSERT_EFI_ERROR (Status);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+
+    if (NumEnabledProcessors != NumProcessors) {
+      for (Index = 0; Index < NumProcessors; ++Index) {
+        if (Index != BspNum) {
+          Status = MpInitLibEnableDisableAP (Index, TRUE, NULL);
+          if (EFI_ERROR (Status)) {
+            DEBUG ((DEBUG_ERROR, "Failed to enable AP %lu.\n", (UINT64)Index));
+            return Status;
+          }
+        }
+      }
+
+      DEBUG ((DEBUG_INFO, "Successfully enabled %lu APs.\n", (UINT64)Index));
+    }
+  } else {
+    BspNum        = 0;
+    NumProcessors = 1;
   }
 
   //

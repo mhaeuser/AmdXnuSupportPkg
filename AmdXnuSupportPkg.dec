@@ -1,0 +1,11 @@
+[Defines]
+  DEC_SPECIFICATION = 0x00010005
+  PACKAGE_NAME      = AmdXnuSupportPkg
+  PACKAGE_GUID      = E2BE596A-416F-4B5E-A550-C6E0FE16D271
+  PACKAGE_VERSION   = 1.0
+
+[Guids]
+  gAmdXnuSupportPkgTokenSpaceGuid = { 0x98ae1ea0, 0xca69, 0x46f9, { 0xa3, 0x16, 0x47, 0x9e, 0x3, 0xdb, 0x10, 0x4d }}
+
+[PcdsFeatureFlag]
+  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuVirtualizeAps|TRUE|BOOLEAN|0x00000001
