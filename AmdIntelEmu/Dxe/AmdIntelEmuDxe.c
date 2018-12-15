@@ -37,10 +37,6 @@ typedef struct {
   AMD_INTEL_EMU_THREAD_CONTEXT *CurrentThreadContext;
 } AMD_INTEL_EMU_PT_INIT_CONTEXT;
 
-STATIC CONST UINT64 mInternalMmioAddresses[] = {
-  FixedPcdGet32 (PcdCpuLocalApicBaseAddress)
-};
-
 STATIC BOOLEAN mInternalNripSupport = FALSE;
 STATIC BOOLEAN mInternalNpSupport   = FALSE;
 
@@ -482,7 +478,7 @@ InternalSplitAndUnmapPage (
   ThreadContext = Private->CurrentThreadContext;
   ASSERT (ThreadContext != NULL);
 
-  for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
+  for (Index = 0; Index < mInternalMmioNumHandlers; ++Index) {
     MmioInfo = &ThreadContext->MmioInfo[Index];
     Result = InternalSplitAndUnmapPageWorker (
                 Address,
@@ -657,7 +653,6 @@ AmdIntelEmuVirtualizeSystem (
   AMD_VMCB_CONTROL_AREA                  *VmcbWalker;
   EFI_STATUS                             Status;
   UINTN                                  Index;
-  UINTN                                  Index2;
 
   Status = InternalPrepareAps (&NumProcessors, &BspNum);
   if (EFI_ERROR (Status)) {
@@ -678,7 +673,7 @@ AmdIntelEmuVirtualizeSystem (
   // MSR map: 1 page, IO map: 3 pages, LAPIC MMIO: 1 page, VMCBs: 2 per thread.
   //
   NumPages     = (1 + 3 + 1 + (NumProcessors * (NUM_STACK_PAGES + 2)));
-  MmioInfoSize = (ARRAY_SIZE (mInternalMmioAddresses) * sizeof (AMD_INTEL_EMU_MMIO_INFO));
+  MmioInfoSize = (mInternalMmioNumHandlers * sizeof (AMD_INTEL_EMU_MMIO_INFO));
   NumPages    += EFI_SIZE_TO_PAGES (
                    NumProcessors
                      * (sizeof (AMD_INTEL_EMU_THREAD_CONTEXT) + MmioInfoSize)
@@ -763,21 +758,6 @@ AmdIntelEmuVirtualizeSystem (
     CopyMem (VmcbWalker, GuestVmcb, SIZE_4KB);
     VmcbWalker->VmcbSaveState = ((UINT64)(UINTN)VmcbWalker + 0x400);
   }
-  //
-  // Initialize Thread Contexts.
-  //
-  for (
-    Index = 0, ThreadContext = ThreadContexts;
-    Index < NumProcessors;
-    ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
-    ) {
-    ThreadContext->NumMmioInfo = ARRAY_SIZE (mInternalMmioAddresses);
-
-    for (Index2 = 0; Index2 < ThreadContext->NumMmioInfo; ++Index2) {
-      ThreadContext->MmioInfo[Index2].Address = mInternalMmioAddresses[Index2];
-    }
-  }
-
   PtInitContext.Address = (UINTN)Memory;
   PtInitContext.Size    = EFI_PAGES_TO_SIZE (NumPages);
 

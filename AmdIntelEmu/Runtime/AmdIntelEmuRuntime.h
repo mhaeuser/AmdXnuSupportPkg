@@ -62,9 +62,9 @@ AmdIntelEmuInternalMmioLapicSetPage (
   IN VOID  *Page
   );
 
-AMD_INTEL_EMU_GET_MMIO_PAGE
-AmdIntelEmuInternalGetMmioHandler (
-  IN UINT64  Address
+VOID
+AmdIntelEmuInternalInitializeMmioInfo (
+  IN OUT AMD_INTEL_EMU_MMIO_INFO  *MmioInfo
   );
 
 /**

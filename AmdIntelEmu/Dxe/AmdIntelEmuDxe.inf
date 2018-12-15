@@ -52,6 +52,9 @@
   VirtualMemory/VirtualMemory.c
 
   InstructionTests.c
+  MmioHandlerMapDummys.c
+  ../MmioHandlerMap.c
+
 
 [Sources.X64]
   X64/DisableTF.nasm

@@ -497,10 +497,10 @@ typedef PACKED struct {
 
 #pragma pack ()
 
-#define GET_NEXT_THREAD_CONTEXT(Context)                             \
-  (AMD_INTEL_EMU_THREAD_CONTEXT *)(                                  \
-    (UINTN)((Context) + 1)                                           \
-      + ((Context)->NumMmioInfo * sizeof (AMD_INTEL_EMU_MMIO_INFO))  \
+#define GET_NEXT_THREAD_CONTEXT(Context)                               \
+  (AMD_INTEL_EMU_THREAD_CONTEXT *)(                                    \
+    (UINTN)((Context) + 1)                                             \
+      + (mInternalMmioNumHandlers * sizeof (AMD_INTEL_EMU_MMIO_INFO))  \
     )
 
 typedef struct AMD_INTEL_EMU_THREAD_CONTEXT AMD_INTEL_EMU_THREAD_CONTEXT;
@@ -517,6 +517,11 @@ UINT64
 (*AMD_INTEL_EMU_GET_MMIO_PAGE) (
   IN UINT64  Address
   );
+
+typedef struct {
+  UINT64                      Address;
+  AMD_INTEL_EMU_GET_MMIO_PAGE GetPage;
+} AMD_INTEL_EMU_MMIO_HANDLER_MAP;
 
 typedef struct {
   UINT64                      Address;
@@ -541,7 +546,6 @@ struct AMD_INTEL_EMU_THREAD_CONTEXT {
   //
   // MMIO info
   //
-  UINTN                            NumMmioInfo;
   AMD_INTEL_EMU_MMIO_INFO          MmioInfo[];
 };
 
@@ -582,5 +586,13 @@ VOID
   OUT UINTN                                   *NumMsrIntercepts,
   OUT CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO  **MsrIntercepts
   );
+
+UINT64
+AmdIntelEmuInternalMmioLapic (
+  IN UINT64  Address
+  );
+
+extern CONST UINTN                          mInternalMmioNumHandlers;
+extern CONST AMD_INTEL_EMU_MMIO_HANDLER_MAP mInternalMmioHandlerMap[];
 
 #endif // AMD_INTEL_EMU_H_

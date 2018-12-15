@@ -46,20 +46,10 @@ InternalEnableVm (
   IN     VOID                          *HostStack
   )
 {
-  UINTN                   Index;
-  AMD_INTEL_EMU_MMIO_INFO *MmioInfo;
-
   ASSERT (ThreadContext != NULL);
   ASSERT (HostStack != NULL);
 
   ASSERT (ThreadContext->Vmcb != NULL);
-  //
-  // Initialize the MMIO intercept handlers.
-  //
-  for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
-    MmioInfo = &ThreadContext->MmioInfo[Index];
-    MmioInfo->GetPage = AmdIntelEmuInternalGetMmioHandler (MmioInfo->Address);
-  }
 
   AmdIntelEmuInternalVmrun (ThreadContext->Vmcb, HostStack);
 }
@@ -73,6 +63,9 @@ _ModuleEntryPoint (
   OUT CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO  **MsrIntercepts
   )
 {
+  UINTN                        Index;
+  AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
+
   ASSERT (Context != NULL);
   ASSERT (EnableVm != NULL);
 
@@ -85,4 +78,14 @@ _ModuleEntryPoint (
   *EnableVm         = InternalEnableVm;
   *NumMsrIntercepts = mAmdIntelEmuInternalNumMsrIntercepts;
   *MsrIntercepts    = mAmdIntelEmuInternalMsrIntercepts;
+  //
+  // Initialize the MMIO intercept handlers.
+  //
+  for (
+    Index = 0, ThreadContext = mInternalThreadContexts;
+    Index < mInternalNumThreadContexts;
+    ++Index, ThreadContext = GET_NEXT_THREAD_CONTEXT (ThreadContext)
+    ) {
+    AmdIntelEmuInternalInitializeMmioInfo (ThreadContext->MmioInfo);
+  }
 }

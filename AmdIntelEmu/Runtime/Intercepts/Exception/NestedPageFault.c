@@ -2,41 +2,23 @@
 
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
-#include <Library/PcdLib.h>
 
 #include "../../AmdIntelEmuRuntime.h"
 
-typedef struct {
-  UINT64                      Address;
-  AMD_INTEL_EMU_GET_MMIO_PAGE GetPage;
-} INTERNAL_MMIO_HANDLER_MAP;
-
-UINT64
-AmdIntelEmuInternalMmioLapic (
-  IN UINT64  Address
-  );
-
-STATIC CONST INTERNAL_MMIO_HANDLER_MAP mInternalMmioHandlerMap[] = {
-  {
-    FixedPcdGet32 (PcdCpuLocalApicBaseAddress),
-    AmdIntelEmuInternalMmioLapic
-  }
-};
-
-AMD_INTEL_EMU_GET_MMIO_PAGE
-AmdIntelEmuInternalGetMmioHandler (
-  IN UINT64  Address
+VOID
+AmdIntelEmuInternalInitializeMmioInfo (
+  IN OUT AMD_INTEL_EMU_MMIO_INFO  *MmioInfo
   )
 {
   UINTN Index;
 
-  for (Index = 0; Index < ARRAY_SIZE (mInternalMmioHandlerMap); ++Index) {
-    if (mInternalMmioHandlerMap[Index].Address == Address) {
-      return mInternalMmioHandlerMap[Index].GetPage;
-    }
-  }
+  ASSERT (MmioInfo != NULL);
 
-  return NULL;
+  for (Index = 0; Index < mInternalMmioNumHandlers; ++Index) {
+    MmioInfo->Address = mInternalMmioHandlerMap[Index].Address;
+    MmioInfo->GetPage = mInternalMmioHandlerMap[Index].GetPage;
+    MmioInfo->Pte     = NULL;
+  }
 }
 
 STATIC
@@ -81,7 +63,7 @@ InternalGetMmioInfo (
 
   ASSERT (ThreadContext != NULL);
 
-  for (Index = 0; Index < ThreadContext->NumMmioInfo; ++Index) {
+  for (Index = 0; Index < mInternalMmioNumHandlers; ++Index) {
     MmioInfo = &ThreadContext->MmioInfo[Index];
     if ((Address >= MmioInfo->Address)
      && (Address < (MmioInfo->Address + SIZE_4KB))) {

@@ -33,6 +33,8 @@
 [Sources]
   AmdIntelEmuRuntime.c
 
+  ../MmioHandlerMap.c
+
   LocalApic.c
   hde/hde64.c
 
