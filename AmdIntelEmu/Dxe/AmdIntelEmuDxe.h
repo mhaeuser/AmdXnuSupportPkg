@@ -51,4 +51,9 @@ CreateIdentityMappingPageTables (
   IN AMD_INTEL_EMU_UNMAP_SPLIT_PAGE  SplitUnmapPage
   );
 
+VOID
+AmdIntelEmuRunTestIntercepts (
+  VOID
+  );
+
 #endif // AMD_INTEL_EMU_DXE_H_

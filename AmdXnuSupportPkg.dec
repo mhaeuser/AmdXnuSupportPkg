@@ -11,3 +11,4 @@
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuVirtualizeAps|TRUE|BOOLEAN|0x00000001
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuInitCpuExceptionHandler|FALSE|BOOLEAN|0x00000002
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuImmediatelyVirtualize|TRUE|BOOLEAN|0x00000003
+  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuTestIntercepts|TRUE|BOOLEAN|0x00000004

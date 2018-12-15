@@ -759,6 +759,10 @@ AmdIntelEmuVirtualizeSystem (
                                   (Private.BspNum * NUM_STACK_PAGES)
                                   );
   InternalLaunchVmEnvironment (&ThreadPrivate);
+
+  if (PcdGetBool (PcdAmdIntelEmuTestIntercepts)) {
+    AmdIntelEmuRunTestIntercepts ();
+  }
 }
 
 VOID

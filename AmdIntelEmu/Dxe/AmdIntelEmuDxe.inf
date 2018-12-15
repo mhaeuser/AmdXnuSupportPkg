@@ -29,6 +29,7 @@
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuVirtualizeAps            ## CONSUMES
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuInitCpuExceptionHandler  ## CONSUMES
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuImmediatelyVirtualize    ## CONSUMES
+  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuTestIntercepts           ## CONSUMES
 
 [Protocols]
   gEfiMpServiceProtocolGuid  ## CONSUMES
@@ -48,6 +49,8 @@
   AmdIntelEmuDxe.c
 
   VirtualMemory/VirtualMemory.c
+
+  InstructionTests.c
 
 [Sources.X64]
   X64/DisableTF.nasm
