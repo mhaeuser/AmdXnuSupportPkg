@@ -351,17 +351,17 @@ InternalLaunchVmEnvironment (
   //
   // RIP and RSP are set in NASM, RAX may be 0 as it is non-volatile (EFIAPI).
   //
-  Cr0              = AsmReadCr0 ();
-  SaveState->EFER  = EferMsr.Uint64;
-  SaveState->CR4   = AsmReadCr4 ();
-  SaveState->CR3   = AsmReadCr3 ();
+  Cr0             = AsmReadCr0 ();
+  SaveState->EFER = EferMsr.Uint64;
+  SaveState->CR4  = AsmReadCr4 ();
+  SaveState->CR3  = AsmReadCr3 ();
   if (GuestVmcb->NP_ENABLE != 0) {
     SaveState->G_PAT = AsmReadMsr64 (MSR_IA32_PAT);
   }
-  SaveState->CR0   = Cr0;
-  SaveState->DR7   = AsmReadDr7 ();
-  SaveState->DR6   = AsmReadDr6 ();
-  SaveState->CR2   = AsmReadCr2 ();
+  SaveState->CR0 = Cr0;
+  SaveState->DR7 = AsmReadDr7 ();
+  SaveState->DR6 = AsmReadDr6 ();
+  SaveState->CR2 = AsmReadCr2 ();
   //
   // Enable caching on the host, this means the guest has control of the CD
   // setting.  This will be rolled back due to the guest context switch when
@@ -658,7 +658,6 @@ AmdIntelEmuVirtualizeSystem (
   EFI_STATUS                             Status;
   UINTN                                  Index;
   UINTN                                  Index2;
-  EFI_PROCESSOR_INFORMATION              ProcessorInfo;
 
   Status = InternalPrepareAps (&NumProcessors, &BspNum);
   if (EFI_ERROR (Status)) {
@@ -808,18 +807,6 @@ AmdIntelEmuVirtualizeSystem (
 
       if (Index == BspNum) {
         BspThreadContext = ThreadContext;
-        continue;
-      }
-
-      Status = MpInitLibGetProcessorInfo (
-                 Index,
-                 &ProcessorInfo,
-                 NULL
-                 );
-      ASSERT_EFI_ERROR (Status);
-      if (EFI_ERROR (Status)
-       || ((ProcessorInfo.StatusFlag & PROCESSOR_ENABLED_BIT) == 0)) {
-        ASSERT (FALSE);
         continue;
       }
       //

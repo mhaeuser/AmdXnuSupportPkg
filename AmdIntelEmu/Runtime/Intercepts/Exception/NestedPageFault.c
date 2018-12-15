@@ -60,10 +60,9 @@ InternalExceptionNpfPostStep (
   // Unmap the MMIO intercept page.
   //
   Address = MmioInfo->Address;
-  Address = BitFieldRead64 (Address, 12, 51);
 
   Pte->Bits.Present              = 0;
-  Pte->Bits.PageTableBaseAddress = Address;
+  Pte->Bits.PageTableBaseAddress = BitFieldRead64 (Address, 12, 51);
   //
   // TLB_CONTROL is not cached.
   //
@@ -130,10 +129,9 @@ AmdIntelEmuInternalExceptionNpf (
     // Map the MMIO intercept page.
     //
     Address = MmioInfo->GetPage (Vmcb->EXITINFO2);
-    Address = BitFieldRead64 (Address, 12, 51);
 
     Pte->Bits.Present              = 1;
-    Pte->Bits.PageTableBaseAddress = Address;
+    Pte->Bits.PageTableBaseAddress = BitFieldRead64 (Address, 12, 51);
     //
     // TLB_CONTROL is not cached.
     //
