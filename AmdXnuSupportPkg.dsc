@@ -41,6 +41,7 @@
   UefiDriverEntryPoint|MdePkg/Library/UefiDriverEntryPoint/UefiDriverEntryPoint.inf
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
+  MpInitLib|AmdXnuSupportPkg/Library/DxeMpInitLibMpService/DxeMpInitLibMpService.inf
 
 [Components]
   AmdXnuSupportPkg/AmdIntelEmu/Dxe/AmdIntelEmuDxe.inf

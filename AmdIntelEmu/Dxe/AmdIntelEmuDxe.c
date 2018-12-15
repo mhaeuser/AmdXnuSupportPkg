@@ -3,12 +3,11 @@
 #include <Register/Amd/Cpuid.h>
 #include <Register/Msr.h>
 
-#include <Protocol/MpService.h>
-
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/MpInitLib.h>
 #include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
@@ -30,7 +29,6 @@ typedef struct {
 typedef struct {
   UINTN                                  Address;
   UINTN                                  Size;
-  EFI_MP_SERVICES_PROTOCOL               *MpServices;
   UINTN                                  BspNum;
   AMD_INTEL_EMU_RUNTIME_CONTEXT          RuntimeContext;
   AMD_INTEL_EMU_RUNTIME_ENTRY            RuntimeEntry;
@@ -699,11 +697,11 @@ AmdIntelEmuVirtualizeSystem (
       continue;
     }
 
-    Status = Private.MpServices->GetProcessorInfo (
-                                   Private.MpServices,
-                                   Index,
-                                   &ProcessorInfo
-                                   );
+    Status = MpInitLibGetProcessorInfo (
+               Index,
+               &ProcessorInfo,
+               NULL
+               );
     ASSERT_EFI_ERROR (Status);
     if (EFI_ERROR (Status)
      || ((ProcessorInfo.StatusFlag & PROCESSOR_ENABLED_BIT) == 0)) {
@@ -721,15 +719,14 @@ AmdIntelEmuVirtualizeSystem (
                                     (Index * NUM_STACK_PAGES)
                                     );
     ThreadPrivate.TscStamp = AsmReadTsc ();
-    Status = Private.MpServices->StartupThisAP (
-                                   Private.MpServices,
-                                   InternalVirtualizeAp,
-                                   Index,
-                                   NULL,
-                                   0,
-                                   &ThreadPrivate,
-                                   NULL
-                                   );
+    Status = MpInitLibStartupThisAP (
+               InternalVirtualizeAp,
+               Index,
+               NULL,
+               0,
+               &ThreadPrivate,
+               NULL
+               );
     ASSERT_EFI_ERROR (Status);
   }
   //
@@ -769,7 +766,6 @@ AmdIntelEmuDxeEntryPoint (
   UINTN                    NumPages;
   AMD_INTEL_EMU_PRIVATE    *Memory;
   EFI_STATUS               Status;
-  EFI_MP_SERVICES_PROTOCOL *MpServices;
   UINTN                    NumProcessors;
   UINTN                    NumEnabledProcessors;
   UINTN                    BspNum;
@@ -781,27 +777,22 @@ AmdIntelEmuDxeEntryPoint (
     return EFI_UNSUPPORTED;
   }
 
-  Status = gBS->LocateProtocol (
-                  &gEfiMpServiceProtocolGuid,
-                  NULL,
-                  (VOID **)&MpServices
-                  );
+  Status = MpInitLibInitialize ();
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
     return Status;
   }
 
-  Status = MpServices->GetNumberOfProcessors (
-                         MpServices,
-                         &NumProcessors,
-                         &NumEnabledProcessors
-                         );
+  Status = MpInitLibGetNumberOfProcessors (
+             &NumProcessors,
+             &NumEnabledProcessors
+             );
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
     return Status;
   }
 
-  Status = MpServices->WhoAmI (MpServices, &BspNum);
+  Status = MpInitLibWhoAmI (&BspNum);
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
     return Status;
@@ -810,7 +801,7 @@ AmdIntelEmuDxeEntryPoint (
   if (NumEnabledProcessors != NumProcessors) {
     for (Index = 0; Index < NumProcessors; ++Index) {
       if (Index != BspNum) {
-        Status = MpServices->EnableDisableAP (MpServices, Index, TRUE, NULL);
+        Status = MpInitLibEnableDisableAP (Index, TRUE, NULL);
         if (EFI_ERROR (Status)) {
           DEBUG ((DEBUG_ERROR, "Failed to enable AP %lu.\n", (UINT64)Index));
           return Status;
@@ -845,7 +836,6 @@ AmdIntelEmuDxeEntryPoint (
 
   Memory->Address                    = (UINTN)Memory;
   Memory->Size                       = EFI_PAGES_TO_SIZE (NumPages);
-  Memory->MpServices                 = MpServices;
   Memory->BspNum                     = BspNum;
   Memory->RuntimeContext.NumThreads  = NumProcessors;
   Memory->RuntimeContext.NpEnabled   = NpSupport;

@@ -34,6 +34,7 @@
   DebugLib
   HobLib
   MemoryAllocationLib
+  MpInitLib
   UefiBootServicesTableLib
   UefiDriverEntryPoint
 
@@ -46,4 +47,4 @@
   X64/DisableTF.nasm
 
 [Depex]
-  gEfiMpServiceProtocolGuid
+  TRUE
