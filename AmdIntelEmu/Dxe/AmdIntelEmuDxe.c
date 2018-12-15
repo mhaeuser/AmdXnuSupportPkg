@@ -796,10 +796,6 @@ AmdIntelEmuDxeEntryPoint (
   EFI_EVENT                Event;
   UINTN                    MmioInfoSize;
 
-  if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
-    InitializeCpuExceptionHandlers (NULL);
-  }
-
   if (!InternalIsSvmAvailable (&NripSupport, &NpSupport)) {
     return EFI_UNSUPPORTED;
   }
@@ -872,6 +868,10 @@ AmdIntelEmuDxeEntryPoint (
   Memory->RuntimeContext.NumThreads  = NumProcessors;
   Memory->RuntimeContext.NpEnabled   = NpSupport;
   Memory->RuntimeContext.NripSupport = NripSupport;
+
+  if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
+    InitializeCpuExceptionHandlers (NULL);
+  }
 
   if (PcdGetBool (PcdAmdIntelEmuImmediatelyVirtualize)) {
     //
