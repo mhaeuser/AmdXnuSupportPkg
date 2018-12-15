@@ -367,6 +367,15 @@ AmdIntelEmuInternalInterceptionHandler (
 
     default:
     {
+      DEBUG ((
+        DEBUG_ERROR,
+        "Unhandled EXITCODE: %lx\n"
+        "EXITINFO1: %lx\n"
+        "EXITINFO2: %lx\n",
+        Vmcb->EXITCODE,
+        Vmcb->EXITINFO1,
+        Vmcb->EXITINFO2
+        ));
       ASSERT (FALSE);
       break;
     }
