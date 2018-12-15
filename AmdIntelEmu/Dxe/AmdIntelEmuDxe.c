@@ -869,13 +869,13 @@ AmdIntelEmuDxeEntryPoint (
   Memory->RuntimeContext.NpEnabled   = NpSupport;
   Memory->RuntimeContext.NripSupport = NripSupport;
 
-  DEBUG_CODE (
+  if (PcdGetBool (PcdAmdIntelEmuImmediatelyVirtualize)) {
     //
     // Immediately virtualize the system in DEBUG builds to easen debugging.
     //
     AmdIntelEmuVirtualizeSystem (Memory);
     return EFI_SUCCESS;
-    );
+  }
 
   Status = gBS->CreateEvent (
                   EVT_SIGNAL_EXIT_BOOT_SERVICES,

@@ -28,6 +28,7 @@
   gUefiCpuPkgTokenSpaceGuid.PcdCpuLocalApicBaseAddress                   ## CONSUMES
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuVirtualizeAps            ## CONSUMES
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuInitCpuExceptionHandler  ## CONSUMES
+  gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuImmediatelyVirtualize    ## CONSUMES
 
 [Protocols]
   gEfiMpServiceProtocolGuid  ## CONSUMES
