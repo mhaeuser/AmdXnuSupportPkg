@@ -27,6 +27,8 @@ AmdIntelEmuInternalGetThreadContext (
   AMD_INTEL_EMU_THREAD_CONTEXT *ThreadContext;
 
   ASSERT (Vmcb != NULL);
+  ASSERT (mInternalNumThreadContexts > 0);
+  ASSERT (mInternalThreadContexts != NULL);
 
   for (
     ThreadContext = mInternalThreadContexts, Index = 0;
