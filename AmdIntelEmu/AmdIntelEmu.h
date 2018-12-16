@@ -566,8 +566,8 @@ typedef struct {
 typedef
 VOID
 (EFIAPI *AMD_INTEL_EMU_ENABLE_VM) (
-  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext,
-  IN     VOID                          *HostStack
+  IN OUT  AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN     VOID                    *HostStack
   );
 
 typedef struct {

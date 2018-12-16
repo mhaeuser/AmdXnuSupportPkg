@@ -43,16 +43,14 @@ STATIC
 VOID
 EFIAPI
 InternalEnableVm (
-  IN OUT AMD_INTEL_EMU_THREAD_CONTEXT  *ThreadContext,
-  IN     VOID                          *HostStack
+  IN OUT  AMD_VMCB_CONTROL_AREA  *Vmcb,
+  IN     VOID                    *HostStack
   )
 {
-  ASSERT (ThreadContext != NULL);
+  ASSERT (Vmcb != NULL);
   ASSERT (HostStack != NULL);
 
-  ASSERT (ThreadContext->Vmcb != NULL);
-
-  AmdIntelEmuInternalVmrun (ThreadContext->Vmcb, HostStack);
+  AmdIntelEmuInternalVmrun (Vmcb, HostStack);
 }
 
 VOID

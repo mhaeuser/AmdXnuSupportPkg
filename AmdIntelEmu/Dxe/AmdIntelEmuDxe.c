@@ -392,7 +392,7 @@ InternalLaunchVmEnvironment (
   //
   ASSERT (Private->EnableVm != NULL);
   Private->EnableVm (
-             ThreadContext,
+             GuestVmcb,
              (VOID *)((UINTN)Private->HostStack + (NUM_STACK_PAGES * SIZE_4KB))
              );
 }
