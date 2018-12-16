@@ -1,7 +1,6 @@
 #include <Base.h>
 
 #include <Library/BaseLib.h>
-#include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 
 #include "../../AmdIntelEmuRuntime.h"
@@ -22,11 +21,7 @@ InternalIretTfIntercept (
   ThreadContext = AmdIntelEmuInternalGetThreadContext (Vmcb);
   ASSERT (ThreadContext != NULL);
 
-  CopyMem (
-    &Vmcb->EVENTINJ,
-    &ThreadContext->QueueEvent,
-    sizeof (Vmcb->EVENTINJ)
-    );
+  Vmcb->EVENTINJ.Uint64 = ThreadContext->QueueEvent.Uint64;
   //
   // Disable single-stepping if it had not been enabled prior to the intercept.
   // RFLAGS is not cached.
@@ -100,9 +95,6 @@ AmdIntelEmuInternalQueueEvent (
   ThreadContext->IretTf = (Eflags.Bits.TF != 0);
   Eflags.Bits.TF        = 0;
   SaveState->RFLAGS     = Eflags.UintN;
-  CopyMem (
-    &ThreadContext->QueueEvent,
-    Event,
-    sizeof (ThreadContext->QueueEvent)
-    );
+
+  ThreadContext->QueueEvent.Uint64 = Event->Uint64;
 }

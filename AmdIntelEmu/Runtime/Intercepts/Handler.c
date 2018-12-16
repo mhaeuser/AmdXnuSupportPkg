@@ -3,7 +3,6 @@
 #include <Protocol/DebugSupport.h>
 
 #include <Library/BaseLib.h>
-#include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 
 #include "../AmdIntelEmuRuntime.h"
@@ -129,7 +128,7 @@ InternalHandleEvents (
   if ((Vmcb->EXITINTINFO.Bits.V != 0)
    && (Vmcb->EXITINTINFO.Bits.TYPE != AmdVmcbSoftwareInterrupt)) {
     if (Vmcb->EVENTINJ.Bits.V == 0) {
-      CopyMem (&Vmcb->EVENTINJ, &Vmcb->EXITINTINFO, sizeof (Vmcb->EVENTINJ));
+      Vmcb->EVENTINJ.Uint64 = Vmcb->EXITINTINFO.Uint64;
       return;
     }
     
@@ -194,7 +193,7 @@ InternalHandleEvents (
     // Interrupt to be executed after the VMEXIT interrupt.
     //
     if (Vmcb->EVENTINJ.Bits.TYPE == AmdVmcbSoftwareInterrupt) {
-      CopyMem (&QueueEvent, &Vmcb->EVENTINJ, sizeof (QueueEvent));
+      QueueEvent.Uint64 = Vmcb->EVENTINJ.Uint64;
     } else {
       //
       // Inject the higher priority event and either discard or queue the lower
@@ -214,7 +213,7 @@ InternalHandleEvents (
             return;
           }
 
-          CopyMem (&QueueEvent, &Vmcb->EXITINTINFO, sizeof (QueueEvent));
+          QueueEvent.Uint64 = Vmcb->EXITINTINFO.Uint64;
 
           break;
         }
@@ -223,30 +222,17 @@ InternalHandleEvents (
          || ((Priority == 32)
           && (Vmcb->EXITINTINFO.Bits.VECTOR > 32)
           && (Vmcb->EXITINTINFO.Bits.VECTOR <= 255))) {
-          CopyMem (
-            &Vmcb->EVENTINJ,
-            &Vmcb->EXITINTINFO,
-            sizeof (Vmcb->EVENTINJ)
-            );
+          Vmcb->EVENTINJ.Uint64 = Vmcb->EXITINTINFO.Uint64;
           //
           // Discard internal events.
           //
           if (Vmcb->EVENTINJ.Bits.TYPE == AmdVmcbException) {
-            CopyMem (
-              &Vmcb->EVENTINJ,
-              &Vmcb->EXITINTINFO,
-              sizeof (Vmcb->EVENTINJ)
-              );
+            Vmcb->EVENTINJ.Uint64 = Vmcb->EXITINTINFO.Uint64;
             return;
           }
 
-          CopyMem (&QueueEvent, &Vmcb->EVENTINJ, sizeof (QueueEvent));
-          CopyMem (
-            &Vmcb->EVENTINJ,
-            &Vmcb->EXITINTINFO,
-            sizeof (Vmcb->EVENTINJ)
-            );
-
+          QueueEvent.Uint64     = Vmcb->EVENTINJ.Uint64;
+          Vmcb->EVENTINJ.Uint64 = Vmcb->EXITINTINFO.Uint64;
           break;
         }
       }
