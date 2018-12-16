@@ -654,6 +654,10 @@ AmdIntelEmuVirtualizeSystem (
   EFI_STATUS                             Status;
   UINTN                                  Index;
 
+  if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
+    InitializeCpuExceptionHandlers (NULL);
+  }
+
   Status = InternalPrepareAps (&NumProcessors, &BspNum);
   if (EFI_ERROR (Status)) {
     ASSERT_EFI_ERROR (Status);
@@ -682,10 +686,6 @@ AmdIntelEmuVirtualizeSystem (
   if (Memory == NULL) {
     DEBUG ((DEBUG_ERROR, "Failed to allocate the HV runtime memory.\n"));
     return;
-  }
-
-  if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
-    InitializeCpuExceptionHandlers (NULL);
   }
 
   //
