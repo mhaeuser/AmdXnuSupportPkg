@@ -11,10 +11,9 @@ ASM_PFX (AmdIntelEmuInternalVmrun):
   ;
   ; Save the caller stack to return transparently later.
   ;
-  mov     [rcx + AMD_VMCB_RSP_OFFSET], rsp
-.ReturnRel:
-  lea     rax, [$ + (.Return - .ReturnRel)]
+  pop     rax
   mov     [rcx + AMD_VMCB_RIP_OFFSET], rax
+  mov     [rcx + AMD_VMCB_RSP_OFFSET], rsp
   mov     rsp, rdx     ; Set up the new host stack.
   ;
   ; Software must load RAX (EAX in 32-bit mode) with the physical address of
@@ -67,6 +66,3 @@ ASM_PFX (AmdIntelEmuInternalVmrun):
   pop     r11
 
   jmp     .StartGuest  ; Unconditionally resume the guest.
-
-.Return:
-  retn

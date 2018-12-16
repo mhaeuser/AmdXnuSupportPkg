@@ -39,20 +39,6 @@ AmdIntelEmuInternalGetThreadContext (
   return ThreadContext;
 }
 
-STATIC
-VOID
-EFIAPI
-InternalEnableVm (
-  IN OUT  AMD_VMCB_CONTROL_AREA  *Vmcb,
-  IN     VOID                    *HostStack
-  )
-{
-  ASSERT (Vmcb != NULL);
-  ASSERT (HostStack != NULL);
-
-  AmdIntelEmuInternalVmrun (Vmcb, HostStack);
-}
-
 VOID
 EFIAPI
 _ModuleEntryPoint (
@@ -74,7 +60,7 @@ _ModuleEntryPoint (
   mAmdIntelEmuInternalNp     = Context->NpEnabled;
   AmdIntelEmuInternalMmioLapicSetPage (Context->LapicPage);
 
-  *EnableVm         = InternalEnableVm;
+  *EnableVm         = AmdIntelEmuInternalVmrun;
   *NumMsrIntercepts = mAmdIntelEmuInternalNumMsrIntercepts;
   *MsrIntercepts    = mAmdIntelEmuInternalMsrIntercepts;
   //
