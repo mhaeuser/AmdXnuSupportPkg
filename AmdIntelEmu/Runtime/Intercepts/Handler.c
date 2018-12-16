@@ -47,6 +47,21 @@ AmdIntelEmuInternalExceptionNpf (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   );
 
+typedef struct {
+  UINT64      ExitCode;
+  CONST CHAR8 *ExitName;
+} INTERNAL_VMEXIT_MAP;
+
+STATIC CONST INTERNAL_VMEXIT_MAP mVmExitMap[] = {
+  { VMEXIT_EXCP_DB, "EXCP_DB" },
+  { VMEXIT_EXCP_UD, "EXCP_UD" },
+  { VMEXIT_CPUID,   "CPUID"   },
+  { VMEXIT_IRET,    "IRET"    },
+  { VMEXIT_MSR,     "MSR"     },
+  { VMEXIT_VMRUN,   "VMRUN"   },
+  { VMEXIT_NPF,     "NPF"     },
+};
+
 VOID
 AmdIntelEmuInternalGetRipInstruction (
   IN  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
@@ -292,6 +307,23 @@ InternalVmcbSanityCheck (
   ASSERT (Vmcb->GuestAsid != 0);
 }
 
+STATIC
+CONST CHAR8 *
+InternalGetVmexitName (
+  IN UINT64  ExitCode
+  )
+{
+  UINTN Index;
+
+  for (Index = 0; Index < ARRAY_SIZE (mVmExitMap); ++Index) {
+    if (mVmExitMap[Index].ExitCode == ExitCode) {
+      return mVmExitMap[Index].ExitName;
+    }
+  }
+
+  return "UNKNOWN";
+}
+
 AMD_VMCB_CONTROL_AREA *
 EFIAPI
 AmdIntelEmuInternalInterceptionHandler (
@@ -301,6 +333,14 @@ AmdIntelEmuInternalInterceptionHandler (
 {
   ASSERT (Vmcb != NULL);
   ASSERT (Registers != NULL);
+
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "Interception: 0x%lx 0x%lx 0x%lx\n",
+    InternalGetVmexitName (Vmcb->EXITCODE),
+    Vmcb->EXITINFO1,
+    Vmcb->EXITINFO2
+    ));
 
   Vmcb->EVENTINJ.Uint64 = 0;
   //
@@ -365,15 +405,7 @@ AmdIntelEmuInternalInterceptionHandler (
 
     default:
     {
-      DEBUG ((
-        DEBUG_ERROR,
-        "Unhandled EXITCODE: %lx\n"
-        "EXITINFO1: %lx\n"
-        "EXITINFO2: %lx\n",
-        Vmcb->EXITCODE,
-        Vmcb->EXITINFO1,
-        Vmcb->EXITINFO2
-        ));
+      DEBUG ((DEBUG_ERROR, "Unhandled VMEXIT!\n"));
       ASSERT (FALSE);
       break;
     }
@@ -381,7 +413,13 @@ AmdIntelEmuInternalInterceptionHandler (
 
   InternalHandleEvents (Vmcb);
 
+  if (Vmcb->EVENTINJ.Bits.V != 0) {
+    DEBUG ((DEBUG_VERBOSE, "EVENTINJ: 0x%lx\n", Vmcb->EVENTINJ.Uint64));
+  }
+
   InternalVmcbSanityCheck (Vmcb);
+
+  DEBUG ((DEBUG_VERBOSE, "Returning...\n"));
   //
   // Return Vmcb so it is loaded into rax when returning to the vmrun loop.
   //
