@@ -13,7 +13,7 @@
 
 [Defines]
   BASE_NAME      = AmdIntelEmuRuntime
-  MODULE_TYPE    = DXE_RUNTIME_DRIVER
+  MODULE_TYPE    = DXE_DRIVER
   VERSION_STRING = 1.0
   INF_VERSION    = 0x00010005
 
