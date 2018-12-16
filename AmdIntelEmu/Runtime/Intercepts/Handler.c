@@ -322,7 +322,7 @@ AmdIntelEmuInternalInterceptionHandler (
 
   DEBUG ((
     DEBUG_VERBOSE,
-    "Interception: 0x%lx 0x%lx 0x%lx\n",
+    "Interception: %a 0x%lx 0x%lx\n",
     InternalGetVmexitName (Vmcb->EXITCODE),
     Vmcb->EXITINFO1,
     Vmcb->EXITINFO2
