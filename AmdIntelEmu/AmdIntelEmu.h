@@ -622,6 +622,35 @@ AmdIntelEmuGetLocalApicBaseAddress (
   VOID
   );
 
+/**
+  Initialize the local APIC timer.
+
+  The local APIC timer is initialized and enabled.
+
+  @param DivideValue   The divide value for the DCR. It is one of 1,2,4,8,16,32,64,128.
+                       If it is 0, then use the current divide value in the DCR.
+  @param InitCount     The initial count value.
+  @param PeriodicMode  If TRUE, timer mode is peridoic. Othewise, timer mode is one-shot.
+  @param Vector        The timer interrupt vector number.
+
+**/
+VOID
+AmdIntelEmuInitializeApicTimer (
+  IN UINTN   DivideValue,
+  IN UINT32  InitCount,
+  IN BOOLEAN PeriodicMode,
+  IN UINT8   Vector
+  );
+
+/**
+  Disable the local APIC timer interrupt.
+
+**/
+VOID
+AmdIntelEmuDisableApicTimerInterrupt (
+  VOID
+  );
+
 extern CONST UINTN                    mInternalMmioNumHandlers;
 extern AMD_INTEL_EMU_MMIO_HANDLER_MAP mInternalMmioHandlerMap[];
 

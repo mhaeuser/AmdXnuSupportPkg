@@ -1,6 +1,7 @@
 #include <PiDxe.h>
 
 #include <Register/Amd/Cpuid.h>
+#include <Register/LocalApic.h>
 #include <Register/Msr.h>
 
 #include <Protocol/LoadedImage.h>
@@ -576,6 +577,12 @@ InternalPrepareAps (
 
   ASSERT (NumThreads != NULL);
   ASSERT (BspNum != NULL);
+  //
+  // Initialize Local APIC Timer hardware and disable Local APIC Timer
+  // interrupts.  This is done by SecMain on Intel platforms.
+  //
+  AmdIntelEmuInitializeApicTimer (0, MAX_UINT32, TRUE, 5);
+  AmdIntelEmuDisableApicTimerInterrupt ();
 
   if (PcdGetBool (PcdAmdIntelEmuVirtualizeAps)) {
     Status = MpInitLibInitialize ();
