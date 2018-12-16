@@ -413,6 +413,13 @@ InternalVirtualizeAp (
   // Sync AP TSC stamp counter with the BSP's.
   //
   AsmWriteMsr64 (MSR_IA32_TIME_STAMP_COUNTER, ThreadPrivate->TscStamp);
+  //
+  // Initialize Local APIC Timer hardware and disable Local APIC Timer
+  // interrupts.  This is done by SecMain on Intel platforms.
+  //
+  AmdIntelEmuInitializeApicTimer (0, MAX_UINT32, TRUE, 5);
+  AmdIntelEmuDisableApicTimerInterrupt ();
+
   InternalLaunchVmEnvironment (ThreadPrivate);
 }
 
