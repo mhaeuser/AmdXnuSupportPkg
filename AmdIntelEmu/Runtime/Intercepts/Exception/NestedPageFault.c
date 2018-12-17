@@ -14,7 +14,7 @@ AmdIntelEmuInternalInitializeMmioInfo (
 
   ASSERT (MmioInfo != NULL);
 
-  for (Index = 0; Index < mInternalMmioNumHandlers; ++Index) {
+  for (Index = 0; Index < mInternalMmioNumHandlers; ++Index, ++MmioInfo) {
     MmioInfo->Address = mInternalMmioHandlerMap[Index].Address;
     MmioInfo->GetPage = mInternalMmioHandlerMap[Index].GetPage;
     MmioInfo->Pte     = NULL;
