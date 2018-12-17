@@ -73,4 +73,6 @@ extern BOOLEAN mAmdIntelEmuInternalNp;
 extern CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO mAmdIntelEmuInternalMsrIntercepts[];
 extern CONST UINTN                            mAmdIntelEmuInternalNumMsrIntercepts;
 
+extern UINT64 *mAmdIntelEmuInternalLapicAddress;
+
 #endif // AMD_INTEL_EMU_RUNTIME_H_

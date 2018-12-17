@@ -55,6 +55,8 @@ _ModuleEntryPoint (
 
   ASSERT (Context != NULL);
   ASSERT (EnableVm != NULL);
+  ASSERT (NumMsrIntercepts != NULL);
+  ASSERT (MsrIntercepts != NULL);
 
   mInternalNumThreadContexts = Context->NumThreads;
   mInternalThreadContexts    = Context->ThreadContexts;
@@ -68,12 +70,8 @@ _ModuleEntryPoint (
   //
   // Initialize the MMIO intercept handlers.
   //
-  for (Index = 0; Index < mInternalMmioNumHandlers; ++Index) {
-    if (mInternalMmioHandlerMap[Index].Address == PcdGet32 (PcdCpuLocalApicBaseAddress)) {
-      mInternalMmioHandlerMap[Index].Address = AmdIntelEmuGetLocalApicBaseAddress ();
-      break;
-    }
-  }
+  ASSERT (mAmdIntelEmuInternalLapicAddress != NULL);
+  *mAmdIntelEmuInternalLapicAddress = AmdIntelEmuGetLocalApicBaseAddress ();
 
   for (
     Index = 0, ThreadContext = mInternalThreadContexts;

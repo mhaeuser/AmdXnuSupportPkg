@@ -515,7 +515,8 @@ VOID
 typedef
 UINT64
 (*AMD_INTEL_EMU_GET_MMIO_PAGE) (
-  IN UINT64  Address
+  IN UINT64  BaseAddress,
+  IN UINT64  FaultAddress
   );
 
 typedef struct {
@@ -589,7 +590,8 @@ VOID
 
 UINT64
 AmdIntelEmuInternalMmioLapic (
-  IN UINT64  Address
+  IN UINT64  BaseAddress,
+  IN UINT64  FaultAddress
   );
 
 /**

@@ -110,7 +110,7 @@ AmdIntelEmuInternalExceptionNpf (
     //
     // Map the MMIO intercept page.
     //
-    Address = MmioInfo->GetPage (Vmcb->EXITINFO2);
+    Address = MmioInfo->GetPage (MmioInfo->Address, Vmcb->EXITINFO2);
 
     Pte->Bits.Present              = 1;
     Pte->Bits.PageTableBaseAddress = BitFieldRead64 (Address, 12, 51);

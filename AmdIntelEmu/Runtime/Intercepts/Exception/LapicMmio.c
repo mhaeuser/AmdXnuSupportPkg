@@ -4,7 +4,6 @@
 
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
-#include <Library/PcdLib.h>
 
 #include "../../AmdIntelEmuRuntime.h"
 
@@ -32,18 +31,16 @@ AmdIntelEmuInternalMmioLapicSetPage (
 
 UINT64
 AmdIntelEmuInternalMmioLapic (
-  IN UINT64  Address
+  IN UINT64  BaseAddress,
+  IN UINT64  FaultAddress
   )
 {
-  UINT32 BaseAddress;
-
   ASSERT (mLapicVersionPage != NULL);
 
-  BaseAddress = FixedPcdGet32 (PcdCpuLocalApicBaseAddress);
-  if ((Address >= (BaseAddress + XAPIC_VERSION_OFFSET))
-   && (Address <  (BaseAddress + XAPIC_VERSION_OFFSET + 4))) {
+  if ((FaultAddress >= (BaseAddress + XAPIC_VERSION_OFFSET))
+   && (FaultAddress <  (BaseAddress + XAPIC_VERSION_OFFSET + 4))) {
     return (UINT64)(UINTN)mLapicVersionPage;
   }
 
-  return Address;
+  return FaultAddress;
 }
