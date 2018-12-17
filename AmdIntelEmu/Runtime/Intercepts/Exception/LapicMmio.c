@@ -42,5 +42,5 @@ AmdIntelEmuInternalMmioLapic (
     return (UINT64)(UINTN)mLapicVersionPage;
   }
 
-  return FaultAddress;
+  return BaseAddress;
 }
