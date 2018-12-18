@@ -86,7 +86,8 @@ AmdIntelEmuRunTestIntercepts (
   for (Index = 0; Index < 50; ++Index) {
     Value2 = MmioRead32 (LapicBase + XAPIC_VERSION_OFFSET);
     if (Value1 != Value2) {
-      DEBUG ((DEBUG_VERBOSE, "ERROR!!!\n"));
+      DEBUG ((DEBUG_ERROR, "ERROR!!!\n"));
+      ASSERT (FALSE);
       return;
     }
   }
