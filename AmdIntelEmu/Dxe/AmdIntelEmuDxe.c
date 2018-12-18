@@ -1,7 +1,7 @@
 #include <PiDxe.h>
 
 #include <Register/Amd/Cpuid.h>
-#include <Register/LocalApic.h>
+#include <Register/Cpuid.h>
 #include <Register/Msr.h>
 
 #include <Protocol/LoadedImage.h>

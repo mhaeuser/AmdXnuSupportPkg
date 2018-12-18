@@ -12,8 +12,6 @@
 
 #pragma pack (1)
 
-#define CPUID_EXTENDED_CPU_SIG  0x80000001U
-
 #define MSR_VM_HSAVE_PA       0xC0010117U
 
 #define MSR_VM_CR  0xC0010114U
