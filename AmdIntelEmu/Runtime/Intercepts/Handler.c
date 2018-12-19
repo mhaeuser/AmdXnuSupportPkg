@@ -4,6 +4,7 @@
 
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
+#include <Library/LocalApicLib.h>
 
 #include "../AmdIntelEmuRuntime.h"
 
@@ -46,6 +47,13 @@ AmdIntelEmuInternalExceptionNpf (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb
   );
 
+VOID
+NORETURN
+EFIAPI
+AmdIntelEmuInternalHltLoop (
+  VOID
+  );
+
 typedef struct {
   UINT64      ExitCode;
   CONST CHAR8 *ExitName;
@@ -54,6 +62,8 @@ typedef struct {
 STATIC CONST INTERNAL_VMEXIT_MAP mVmExitMap[] = {
   { VMEXIT_EXCP_DB, "EXCP_DB" },
   { VMEXIT_EXCP_UD, "EXCP_UD" },
+  { VMEXIT_EXCP_SX, "EXCP_SX" },
+  { VMEXIT_INIT,    "INIT"    },
   { VMEXIT_CPUID,   "CPUID"   },
   { VMEXIT_IRET,    "IRET"    },
   { VMEXIT_MSR,     "MSR"     },
@@ -381,6 +391,30 @@ AmdIntelEmuInternalInterceptionHandler (
       InternalRaiseRipNonJmp (Vmcb);
 
       break;
+    }
+
+    case VMEXIT_EXCP_SX:
+    {
+      if (Vmcb->EXITINFO1 != 1) {
+        //
+        // #SX is not caused by an INIT assertion.
+        //
+        ASSERT (FALSE);
+        break;
+      }
+
+      // Fall through.
+    }
+
+    case VMEXIT_INIT:
+    {
+      //
+      // The INIT instruction sets EFER to 0, which means EFER.SVME zero'd.
+      // As this causes undefined behavior during guest runtime, all INITs are
+      // intercepted and re-issued on host level.  This sequence cannot return.
+      //
+      SendInitIpi (GetApicId ());
+      AmdIntelEmuInternalHltLoop ();
     }
 
     case VMEXIT_VMRUN:

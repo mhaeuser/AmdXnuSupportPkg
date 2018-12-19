@@ -6,6 +6,12 @@ extern ASM_PFX (AmdIntelEmuInternalInterceptionHandler)
     DEFAULT REL
     SECTION .text
 
+global ASM_PFX (AmdIntelEmuInternalHltLoop)
+ASM_PFX (AmdIntelEmuInternalHltLoop):
+    cli
+    hlt
+    jmp     ASM_PFX (AmdIntelEmuInternalHltLoop)
+
 global ASM_PFX (AmdIntelEmuInternalVmrun)
 ASM_PFX (AmdIntelEmuInternalVmrun):
   ;

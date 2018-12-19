@@ -32,6 +32,7 @@
   PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
   IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsic.inf
+  LocalApicLib|UefiCpuPkg/Library/BaseXApicX2ApicLib/BaseXApicX2ApicLib.inf
 
 [LibraryClasses.common.DXE_DRIVER]
   DebugLib|OcSupportPkg/Library/OcDebugLogLib/OcDebugLogLib.inf

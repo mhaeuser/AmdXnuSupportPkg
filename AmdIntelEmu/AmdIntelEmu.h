@@ -224,6 +224,8 @@ typedef union {
 enum {
   VMEXIT_EXCP_DB = 0x0041,
   VMEXIT_EXCP_UD = 0x0046,
+  VMEXIT_EXCP_SX = 0x005E,
+  VMEXIT_INIT    = 0x0063,
   VMEXIT_CPUID   = 0x0072,
   VMEXIT_IRET    = 0x0074,
   VMEXIT_MSR     = 0x007C,

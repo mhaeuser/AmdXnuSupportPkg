@@ -29,6 +29,7 @@
   BaseMemoryLib
   DebugLib
   IoLib
+  LocalApicLib
 
 [Sources]
   AmdIntelEmuRuntime.c
