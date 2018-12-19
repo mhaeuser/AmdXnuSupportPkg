@@ -54,6 +54,42 @@ AmdIntelEmuInternalHltLoop (
   VOID
   );
 
+///
+/// Byte packed structure for Control Register 4 (CR4).
+/// 32-bits on IA-32.
+/// 64-bits on x64.  The upper 32-bits on x64 are reserved.
+///
+typedef union {
+  struct {
+    UINT32  VME:1;          ///< Virtual-8086 Mode Extensions.
+    UINT32  PVI:1;          ///< Protected-Mode Virtual Interrupts.
+    UINT32  TSD:1;          ///< Time Stamp Disable.
+    UINT32  DE:1;           ///< Debugging Extensions.
+    UINT32  PSE:1;          ///< Page Size Extensions.
+    UINT32  PAE:1;          ///< Physical Address Extension.
+    UINT32  MCE:1;          ///< Machine Check Enable.
+    UINT32  PGE:1;          ///< Page Global Enable.
+    UINT32  PCE:1;          ///< Performance Monitoring Counter
+                            ///< Enable.
+    UINT32  OSFXSR:1;       ///< Operating System Support for
+                            ///< FXSAVE and FXRSTOR instructions
+    UINT32  OSXMMEXCPT:1;   ///< Operating System Support for
+                            ///< Unmasked SIMD Floating Point
+                            ///< Exceptions.
+    UINT32  Reserved_0:5;   ///< Reserved.
+    UINT32  FSGSBASE:1;     ///< Enable RDFSBASE, RDGSBASE, WRFSBASE, and
+                            ///< WRGSBASE instructions.
+    UINT32  Reserved_1:1;   ///< Reserved.
+    UINT32  OSXSAVE:1;      ///< XSAVE and Processor Extended States Enable
+                            ///< Bit.
+    UINT32  Reserved_2:1;   ///< Reserved.
+    UINT32  SMEP:1;         ///< Supervisor Mode Execution Prevention.
+    UINT32  SMAP:1;         ///< Supervisor Mode Access Prevention.
+    UINT32  Reserved_3:11;  ///< Reserved.
+  } Bits;
+  UINTN     UintN;
+} AMD_IA32_CR4;
+
 typedef struct {
   UINT64      ExitCode;
   CONST CHAR8 *ExitName;
@@ -261,7 +297,7 @@ InternalVmcbSanityCheck (
   CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   MSR_AMD_EFER_REGISTER                 EferRegister;
   IA32_CR0                              Cr0;
-  IA32_CR4                              Cr4;
+  AMD_IA32_CR4                          Cr4;
   IA32_SEGMENT_ATTRIBUTES               CsAttributes;
 
   ASSERT (Vmcb != NULL);
@@ -276,7 +312,12 @@ InternalVmcbSanityCheck (
 
   ASSERT (EferRegister.Bits.SVME != 0);
 
-  ASSERT ((Cr4.Bits.Reserved_0 == 0) && (Cr4.Bits.Reserved_1 == 0));
+  ASSERT (
+      (Cr4.Bits.Reserved_0 == 0)
+   && (Cr4.Bits.Reserved_1 == 0)
+   && (Cr4.Bits.Reserved_2 == 0)
+   && (Cr4.Bits.Reserved_3 == 0)
+    );
   ASSERT (BitFieldRead64 (SaveState->DR6, 32, 63) == 0);
   ASSERT (BitFieldRead64 (SaveState->DR7, 32, 63) == 0);
   ASSERT (
