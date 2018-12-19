@@ -40,10 +40,12 @@ AmdIntelEmuInternalRdmsrCoreThreadCount (
     NULL
     );
   CoreCount = (ThreadCount / (UINT16)(CuIdEbx.Bits.CoresPerComputeUnit + 1));
-
+  //
+  // XNU has Core_Count and Thread_Count swapped.
+  //
   CoreThreadCountMsr.Uint64            = 0;
-  CoreThreadCountMsr.Bits.Core_Count   = CoreCount;
-  CoreThreadCountMsr.Bits.Thread_Count = ThreadCount;
+  CoreThreadCountMsr.Bits.Core_Count   = ThreadCount;
+  CoreThreadCountMsr.Bits.Thread_Count = CoreCount;
   AmdIntelEmuInternalWriteMsrValue64 (
     &SaveState->RAX,
     Registers,
