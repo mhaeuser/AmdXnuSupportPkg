@@ -84,13 +84,13 @@ AmdIntelEmuInternalExceptionUd (
   if ((Instruction.flags & F_ERROR) == 0) {
     if (Instruction.opcode == 0x0F) {
       switch (Instruction.opcode2) {
-        case 34:
+        case 0x34:
         {
           AmdIntelEmuInternalUdSysenter (Vmcb, &Instruction);
           return;
         }
 
-        case 35:
+        case 0x35:
         {
           AmdIntelEmuInternalUdSysexit (Vmcb, Registers, &Instruction);
           return;
