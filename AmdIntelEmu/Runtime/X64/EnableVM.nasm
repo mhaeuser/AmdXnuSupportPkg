@@ -6,6 +6,11 @@ extern ASM_PFX (AmdIntelEmuInternalInterceptionHandler)
     DEFAULT REL
     SECTION .text
 
+global ASM_PFX (AmdIntelEmuInternalSetGif)
+ASM_PFX (AmdIntelEmuInternalSetGif):
+    stgi
+    retn
+
 global ASM_PFX (AmdIntelEmuInternalHltLoop)
 ASM_PFX (AmdIntelEmuInternalHltLoop):
     cli

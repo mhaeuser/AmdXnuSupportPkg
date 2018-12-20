@@ -54,6 +54,12 @@ AmdIntelEmuInternalHltLoop (
   VOID
   );
 
+VOID
+EFIAPI
+AmdIntelEmuInternalSetGif (
+  VOID
+  );
+
 ///
 /// Byte packed structure for Control Register 4 (CR4).
 /// 32-bits on IA-32.
@@ -434,27 +440,15 @@ AmdIntelEmuInternalInterceptionHandler (
       break;
     }
 
-    case VMEXIT_EXCP_SX:
-    {
-      if (Vmcb->EXITINFO1 != 1) {
-        //
-        // #SX is not caused by an INIT assertion.
-        //
-        ASSERT (FALSE);
-        break;
-      }
-
-      // Fall through.
-    }
-
     case VMEXIT_INIT:
     {
       //
-      // The INIT instruction sets EFER to 0, which means EFER.SVME zero'd.
+      // The INIT procedure sets EFER to 0, which means EFER.SVME zero'd.
       // As this causes undefined behavior during guest runtime, all INITs are
-      // intercepted and re-issued on host level.  This sequence cannot return.
+      // intercepted and taken on host level.  STGI is called to release the
+      // pending INIT.  This sequence cannot return.
       //
-      SendInitIpi (GetApicId ());
+      AmdIntelEmuInternalSetGif ();
       AmdIntelEmuInternalHltLoop ();
     }
 

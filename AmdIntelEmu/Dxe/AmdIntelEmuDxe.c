@@ -242,7 +242,6 @@ InternalLaunchVmEnvironment (
   AMD_VMCB_CONTROL_AREA           *GuestVmcb;
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   MSR_VM_CR_REGISTER              VmCrMsr;
-  BOOLEAN                         VmCrChanged;
   MSR_AMD_EFER_REGISTER           EferMsr;
   IA32_DESCRIPTOR                 Gdtr;
   CONST IA32_SEGMENT_DESCRIPTOR   *LdtrDesc;
@@ -287,8 +286,6 @@ InternalLaunchVmEnvironment (
     EferMsr.Bits.SVME = 1;
     AsmWriteMsr64 (MSR_IA32_EFER, EferMsr.Uint64);
   }
-
-  VmCrChanged = FALSE;
   //
   // The effect of turning off EFER.SVME while a guest is running is undefined;
   // therefore, the VMM should always prevent guests from writing EFER.SVM
@@ -298,15 +295,6 @@ InternalLaunchVmEnvironment (
   //
   if (VmCrMsr.Bits.LOCK == 0) {
     VmCrMsr.Bits.LOCK = 1;
-    VmCrChanged       = TRUE;
-  }
-
-  if (VmCrMsr.Bits.R_INIT == 0) {
-    VmCrMsr.Bits.R_INIT = 1;
-    VmCrChanged         = TRUE;
-  }
-
-  if (VmCrChanged) {
     AsmWriteMsr64 (MSR_VM_CR, VmCrMsr.Uint64);
   }
   //
@@ -744,10 +732,8 @@ AmdIntelEmuVirtualizeSystem (
   // Set up the generic VMCB used on all cores.
   //
   GuestVmcb = (AMD_VMCB_CONTROL_AREA *)GuestVmcbs;
+  GuestVmcb->InterceptExceptionVectors = (1UL << EXCEPT_IA32_INVALID_OPCODE);
   GuestVmcb->InterceptInit  = 1;
-  GuestVmcb->InterceptExceptionVectors =
-                 (1UL << EXCEPT_IA32_INVALID_OPCODE)
-               | (1UL << EXCEPT_AMD_SX);
   GuestVmcb->InterceptCpuid = 1;
   //
   // The current implementation requires that the VMRUN intercept always be set
