@@ -1,21 +1,13 @@
-%define AMD_VMCB_RIP_OFFSET  (0x400 + 0x0178)
-%define AMD_VMCB_RSP_OFFSET  (0x400 + 0x01D8)
+%define AMD_VMCB_EXITCODE_OFFSET  (0x70)
+%define AMD_VMCB_RIP_OFFSET       (0x400 + 0x0178)
+%define AMD_VMCB_RSP_OFFSET       (0x400 + 0x01D8)
+
+#include "AmdIntelEmu.h"
 
 extern ASM_PFX (AmdIntelEmuInternalInterceptionHandler)
 
     DEFAULT REL
     SECTION .text
-
-global ASM_PFX (AmdIntelEmuInternalSetGif)
-ASM_PFX (AmdIntelEmuInternalSetGif):
-    stgi
-    retn
-
-global ASM_PFX (AmdIntelEmuInternalHltLoop)
-ASM_PFX (AmdIntelEmuInternalHltLoop):
-    cli
-    hlt
-    jmp     ASM_PFX (AmdIntelEmuInternalHltLoop)
 
 global ASM_PFX (AmdIntelEmuInternalVmrun)
 ASM_PFX (AmdIntelEmuInternalVmrun):
@@ -35,6 +27,20 @@ ASM_PFX (AmdIntelEmuInternalVmrun):
 
 .StartGuest:
   vmrun
+  ;
+  ; The INIT procedure sets EFER to 0, which means EFER.SVME zero'd.
+  ; As this causes undefined behavior during guest runtime, all INITs are
+  ; intercepted and taken on host level.  STGI is called to release the
+  ; pending INIT.  This sequence is machine code to minimize delays.
+  ;
+  cmp     qword [rax + AMD_VMCB_EXITCODE_OFFSET], VMEXIT_INIT
+  jnz     .InterceptionHandler
+  stgi
+.HltLoop:
+  cli
+  hlt
+  jmp     .HltLoop
+.InterceptionHandler:
   ;
   ; Interception handling code.
   ;
