@@ -702,6 +702,8 @@ AmdIntelEmuVirtualizeSystem (
     return;
   }
 
+  DEBUG ((DEBUG_VERBOSE, "Allocated HV memory [%p, %p).\n", Memory, (UINT8 *)Memory + EFI_PAGES_TO_SIZE (NumPages)));
+
   //
   // VMRUN is available only at CPL-0.
   // - Assumption: UEFI always runs at CPL-0.
