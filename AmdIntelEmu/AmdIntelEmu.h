@@ -138,7 +138,7 @@ typedef union {
     UINT32 CpuVid   : 8;
     UINT32 IddValue : 8;
     UINT32 IddDiv   : 2;
-    UINT32 Reserved : 30;
+    UINT32 Reserved : 31;
     UINT32 PstateEn : 1;
   }      Bits;
   UINT64 Uint64;
