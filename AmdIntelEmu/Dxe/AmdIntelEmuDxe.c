@@ -745,6 +745,9 @@ AmdIntelEmuVirtualizeSystem (
   //
   GuestVmcb = (AMD_VMCB_CONTROL_AREA *)GuestVmcbs;
   GuestVmcb->InterceptInit  = 1;
+  GuestVmcb->InterceptExceptionVectors =
+                 (1UL << EXCEPT_IA32_INVALID_OPCODE)
+               | (1UL << EXCEPT_AMD_SX);
   GuestVmcb->InterceptCpuid = 1;
   //
   // The current implementation requires that the VMRUN intercept always be set
