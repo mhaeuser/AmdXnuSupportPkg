@@ -37,6 +37,7 @@
   ../LocalApic.c
   ../MmioHandlerMap.c
 
+  hde/hde32.c
   hde/hde64.c
 
   Intercepts/Handler.c
