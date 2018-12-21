@@ -18,10 +18,7 @@ AmdIntelEmuInternalUdSysexit (
   MSR_IA32_SYSENTER_CS_REGISTER   SysenterCs;
   BOOLEAN                         Operand64;
   IA32_SEGMENT_ATTRIBUTES         SegAttrib;
-  //
-  // sysexit is available in all legacy and compatibility modes (except Real
-  // Mode), hence this function is safe to assume Long Mode.
-  //
+
   ASSERT (Vmcb != NULL);
   ASSERT (Registers != NULL);
   ASSERT (Instruction != NULL);

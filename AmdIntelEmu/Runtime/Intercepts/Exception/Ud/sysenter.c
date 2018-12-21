@@ -15,12 +15,10 @@ AmdIntelEmuInternalUdSysenter (
 {
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
   MSR_IA32_SYSENTER_CS_REGISTER   SysenterCs;
+  UINT64                          Value;
   IA32_EFLAGS32                   Eflags;
   IA32_SEGMENT_ATTRIBUTES         SegAttrib;
-  //
-  // sysenter is available in all legacy and compatibility modes (except Real
-  // Mode), hence this function is safe to assume Long Mode.
-  //
+
   ASSERT (Vmcb != NULL);
   ASSERT (Instruction != NULL);
 
@@ -37,11 +35,22 @@ AmdIntelEmuInternalUdSysenter (
     AmdIntelEmuInternalInjectGp (Vmcb, 0);
     return;
   }
+
+  SegAttrib.Uint16 = SaveState->CS.Attributes;
   //
   // RSP and RIP are not cached.
   //
-  SaveState->RSP = AsmReadMsr64 (MSR_IA32_SYSENTER_ESP);
-  SaveState->RIP = AsmReadMsr64 (MSR_IA32_SYSENTER_EIP);
+  Value = AsmReadMsr64 (MSR_IA32_SYSENTER_ESP);
+  if (SegAttrib.Bits.L == 0) {
+    Value = (UINT32)Value;
+  }
+  SaveState->RSP = Value;
+
+  Value = AsmReadMsr64 (MSR_IA32_SYSENTER_EIP);
+  if (SegAttrib.Bits.L == 0) {
+    Value = (UINT32)Value;
+  }
+  SaveState->RIP = Value;
   //
   // RFLAGS is not cached.
   //
@@ -66,7 +75,7 @@ AmdIntelEmuInternalUdSysenter (
   // With 4 - KByte granularity, implies a 4 - GByte limit
   //
   SaveState->CS.Limit = 0x0FFFFF;
-  SegAttrib.Uint16    = SaveState->CS.Attributes;
+  // SegAttrib is set to CS above.
   //
   // Execute / read code, accessed
   //
@@ -74,8 +83,8 @@ AmdIntelEmuInternalUdSysenter (
   SegAttrib.Bits.S         = 1;
   SegAttrib.Bits.DPL       = 0;
   SegAttrib.Bits.P         = 1;
-  SegAttrib.Bits.L         = 1;
-  SegAttrib.Bits.DB        = 0;
+  // SegAttrib.Bits.L remains the same.
+  SegAttrib.Bits.DB        = ((SegAttrib.Bits.L == 0) ? 1 : 0);
   SegAttrib.Bits.G         = 1;
   SaveState->CS.Attributes = SegAttrib.Uint16;
 
