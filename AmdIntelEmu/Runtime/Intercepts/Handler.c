@@ -108,6 +108,10 @@ AmdIntelEmuInternalGetRipInstruction (
 {
   UINTN                   Address;
   IA32_SEGMENT_ATTRIBUTES SegAttrib;
+  //
+  // TODO: Virtual -> Physical RIP.
+  //
+  ASSERT (FALSE);
 
   ASSERT (SaveState != NULL);
   ASSERT (Instruction != NULL);
