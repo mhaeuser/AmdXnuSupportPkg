@@ -333,6 +333,7 @@ InternalVmcbSanityCheck (
       (EferRegister.Bits.LME == 0)
    || (Cr0.Bits.PG == 0)
    || (Cr4.Bits.PAE == 0)
+   || (CsAttributes.Bits.L == 0)
    || (CsAttributes.Bits.DB == 0)
     );
   ASSERT (Vmcb->InterceptVmrun != 0);
