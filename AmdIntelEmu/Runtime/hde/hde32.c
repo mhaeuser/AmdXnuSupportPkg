@@ -9,15 +9,15 @@
 
 #include <Library/BaseMemoryLib.h>
 
-#include "hde32.h"
+#include "hde.h"
 #include "table32.h"
 
-unsigned int hde32_disasm(const void *code, hde32s *hs)
+unsigned int hde32_disasm(const void *code, hdes *hs)
 {
     UINT8 x, c = 0, *p = (UINT8 *)code, cflags, opcode, pref = 0;
     UINT8 *ht = hde32_table, m_mod, m_reg, m_rm, disp_size = 0;
 
-    ZeroMem (hs, sizeof(hde32s));
+    ZeroMem (hs, sizeof(hdes));
 
     for (x = 16; x; x--)
         switch (c = *p++) {

@@ -103,7 +103,7 @@ STATIC CONST INTERNAL_VMEXIT_MAP mVmExitMap[] = {
 VOID
 AmdIntelEmuInternalGetRipInstruction (
   IN  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  OUT hde64s                                 *Instruction
+  OUT hdes                                   *Instruction
   )
 {
   UINTN                   Address;
@@ -119,6 +119,8 @@ AmdIntelEmuInternalGetRipInstruction (
   SegAttrib.Uint16 = SaveState->CS.Attributes;
   if (SegAttrib.Bits.L == 0) {
     Address += (SaveState->CS.Base << 4U);
+    hde32_disasm ((VOID *)Address, Instruction);
+    return;
   }
 
   hde64_disasm ((VOID *)Address, Instruction);
@@ -131,7 +133,7 @@ InternalRaiseRipNonJmp (
   )
 {
   AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
-  hde64s                          Instruction;
+  hdes                            Instruction;
 
   ASSERT (Vmcb != NULL);
 

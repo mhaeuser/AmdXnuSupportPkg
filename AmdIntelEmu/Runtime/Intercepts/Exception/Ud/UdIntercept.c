@@ -7,14 +7,14 @@
 VOID
 AmdIntelEmuInternalUdSysenter (
   IN OUT AMD_VMCB_CONTROL_AREA  *Vmcb,
-  IN     CONST hde64s           *Instruction
+  IN     CONST hdes             *Instruction
   );
 
 VOID
 AmdIntelEmuInternalUdSysexit (
   IN OUT AMD_VMCB_CONTROL_AREA    *Vmcb,
   IN OUT AMD_INTEL_EMU_REGISTERS  *Registers,
-  IN     CONST hde64s             *Instruction
+  IN     CONST hdes               *Instruction
   );
 
 VOID
@@ -72,7 +72,7 @@ AmdIntelEmuInternalExceptionUd (
   )
 {
   CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES *SaveState;
-  hde64s                                Instruction;
+  hdes                                  Instruction;
 
   ASSERT (Vmcb != NULL);
 

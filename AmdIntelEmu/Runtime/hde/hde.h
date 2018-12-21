@@ -1,5 +1,5 @@
 ﻿/*
- * Hacker Disassembler Engine 32
+ * Hacker Disassembler Engine
  * Copyright (c) 2006-2009, Vyacheslav Patkov.
  * All rights reserved.
  *
@@ -7,19 +7,20 @@
  *
  */
 
-#ifndef _HDE32_H_
-#define _HDE32_H_
+#ifndef _HDE_H_
+#define _HDE_H_
 
 #define F_MODRM         0x00000001
 #define F_SIB           0x00000002
 #define F_IMM8          0x00000004
 #define F_IMM16         0x00000008
 #define F_IMM32         0x00000010
-#define F_DISP8         0x00000020
-#define F_DISP16        0x00000040
-#define F_DISP32        0x00000080
-#define F_RELATIVE      0x00000100
-#define F_2IMM16        0x00000800
+#define F_IMM64         0x00000020  // only used for 64-bit instructions
+#define F_DISP8         0x00000040
+#define F_DISP16        0x00000080
+#define F_DISP32        0x00000100
+#define F_RELATIVE      0x00000200
+#define F_2IMM16        0x00000800  // only used for 32-bit instructions
 #define F_ERROR         0x00001000
 #define F_ERROR_OPCODE  0x00002000
 #define F_ERROR_LENGTH  0x00004000
@@ -32,7 +33,9 @@
 #define F_PREFIX_67     0x08000000
 #define F_PREFIX_LOCK   0x10000000
 #define F_PREFIX_SEG    0x20000000
-#define F_PREFIX_ANY    0x3f000000
+#define F_PREFIX_REX    0x40000000
+#define F_PREFIX_ANY_32 0x3f000000
+#define F_PREFIX_ANY_64 0x7f000000
 
 #define PREFIX_SEGMENT_CS   0x2e
 #define PREFIX_SEGMENT_SS   0x36
@@ -55,6 +58,11 @@ typedef PACKED struct {
     UINT8 p_seg;
     UINT8 p_66;
     UINT8 p_67;
+    UINT8 rex;         // Only used for 64-bit instructions.
+    UINT8 rex_w;       // Only used for 64-bit instructions.
+    UINT8 rex_r;       // Only used for 64-bit instructions.
+    UINT8 rex_x;       // Only used for 64-bit instructions.
+    UINT8 rex_b;       // Only used for 64-bit instructions.
     UINT8 opcode;
     UINT8 opcode2;
     UINT8 modrm;
@@ -69,6 +77,7 @@ typedef PACKED struct {
         UINT8 imm8;
         UINT16 imm16;
         UINT32 imm32;
+        UINT64 imm64;  // Only used for 64-bit instructions.
     } imm;
     union {
         UINT8 disp8;
@@ -76,11 +85,14 @@ typedef PACKED struct {
         UINT32 disp32;
     } disp;
     UINT32 flags;
-} hde32s;
+} hdes;
 
 #pragma pack(pop)
 
 /* __cdecl */
-unsigned int hde32_disasm(const void *code, hde32s *hs);
+unsigned int hde32_disasm(const void *code, hdes *hs);
 
-#endif /* _HDE32_H_ */
+/* Note, code should point to at least 32 valid bytes. */
+unsigned int hde64_disasm (const void *code, hdes *hs);
+
+#endif /* _HDE_H_ */

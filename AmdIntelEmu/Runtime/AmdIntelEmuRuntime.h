@@ -2,7 +2,7 @@
 #define AMD_INTEL_EMU_RUNTIME_H_
 
 #include "../AmdIntelEmu.h"
-#include "hde/hde64.h"
+#include "hde/hde.h"
 
 VOID
 AmdIntelEmuInternalSingleStepRip (
@@ -27,7 +27,7 @@ AmdIntelEmuInternalWriteMsrValue64 (
 VOID
 AmdIntelEmuInternalGetRipInstruction (
   IN  CONST AMD_VMCB_SAVE_STATE_AREA_NON_ES  *SaveState,
-  OUT hde64s                                 *Instruction
+  OUT hdes                                   *Instruction
   );
 
 VOID

@@ -9,16 +9,16 @@
 
 #include <Library/BaseMemoryLib.h>
 
-#include "hde64.h"
+#include "hde.h"
 #include "table64.h"
 
-unsigned int hde64_disasm(const void *code, hde64s *hs)
+unsigned int hde64_disasm(const void *code, hdes *hs)
 {
     UINT8 x, c = 0, *p = (UINT8 *)code, cflags, opcode, pref = 0;
     UINT8 *ht = hde64_table, m_mod, m_reg, m_rm, disp_size = 0;
     UINT8 op64 = 0;
 
-    ZeroMem (hs, sizeof(hde64s));
+    ZeroMem (hs, sizeof(hdes));
 
     for (x = 16; x; x--)
         switch (c = *p++) {
