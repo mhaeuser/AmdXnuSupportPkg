@@ -31,6 +31,9 @@
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuImmediatelyVirtualize    ## CONSUMES
   gAmdXnuSupportPkgTokenSpaceGuid.PcdAmdIntelEmuTestIntercepts           ## CONSUMES
 
+[Guids]
+  gEfiFileInfoGuid
+
 [Protocols]
   gEfiLoadedImageProtocolGuid  ## CONSUMES
 
@@ -47,20 +50,54 @@
   UefiBootServicesTableLib
   UefiDriverEntryPoint
 
+  CacheMaintenanceLib
+  PeCoffLib
+
 [Sources]
   AmdIntelEmuDxe.c
 
   VirtualMemory/VirtualMemory.c
 
   InstructionTests.c
-  MmioHandlerMapDummys.c
 
   ../LocalApic.c
+  #MmioHandlerMapDummys.c
   ../MmioHandlerMap.c
 
+  AmdIntelEmuRuntime.c
+  ../Runtime/hde/hde32.c
+  ../Runtime/hde/hde64.c
+
+  ../Runtime/Intercepts/Handler.c
+
+  ../Runtime/Intercepts/Cpuid/CpuidIntercept.c
+  ../Runtime/Intercepts/Cpuid/Leaf0.c
+  ../Runtime/Intercepts/Cpuid/Leaf1.c
+  ../Runtime/Intercepts/Cpuid/Leaf2.c
+  ../Runtime/Intercepts/Cpuid/Leaf4.c
+  ../Runtime/Intercepts/Cpuid/Vmm.c
+
+  ../Runtime/Intercepts/Exception/Ud/UdIntercept.c
+  ../Runtime/Intercepts/Exception/Ud/sysenter.c
+  ../Runtime/Intercepts/Exception/Ud/sysexit.c
+
+  ../Runtime/Intercepts/Exception/Debug.c
+  ../Runtime/Intercepts/Exception/Iret.c
+  ../Runtime/Intercepts/Exception/LapicMmio.c
+  ../Runtime/Intercepts/Exception/NestedPageFault.c
+
+  ../Runtime/Intercepts/Msr/MsrIntercept.c
+  ../Runtime/Intercepts/Msr/BiosSignId.c
+  ../Runtime/Intercepts/Msr/CoreThreadCount.c
+  ../Runtime/Intercepts/Msr/MiscEnable.c
+  ../Runtime/Intercepts/Msr/Pat.c
+  ../Runtime/Intercepts/Msr/PlatformId.c
+  ../Runtime/Intercepts/Msr/X2apicVersion.c
 
 [Sources.X64]
   X64/DisableTF.nasm
+
+  ../Runtime/X64/EnableVM.nasm
 
 [Depex]
   TRUE

@@ -4,7 +4,10 @@
 #include <Register/Cpuid.h>
 #include <Register/Msr.h>
 
+#include <Guid/FileInfo.h>
+
 #include <Protocol/LoadedImage.h>
+#include <Protocol/SimpleFileSystem.h>
 
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -16,10 +19,38 @@
 #include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
+#include <Library/CacheMaintenanceLib.h>
+#include <Library/PeCoffLib.h>
+
 #include "AmdIntelEmuDxe.h"
 
+//
+// Private Data Types
+//
+#define IMAGE_FILE_HANDLE_SIGNATURE       SIGNATURE_32('i','m','g','f')
+typedef struct {
+  UINTN               Signature;
+  BOOLEAN             FreeBuffer;
+  VOID                *Source;
+  UINTN               SourceSize;
+} IMAGE_FILE_HANDLE;
 
-#define NUM_STACK_PAGES  1U
+VOID
+EFIAPI
+AmdIntelEmuRuntimeEntryPoint (
+  IN  CONST AMD_INTEL_EMU_RUNTIME_CONTEXT     *Context,
+  OUT AMD_INTEL_EMU_ENABLE_VM                 *EnableVm,
+  OUT UINTN                                   *NumMsrIntercepts,
+  OUT CONST AMD_INTEL_EMU_MSR_INTERCEPT_INFO  **MsrIntercepts
+);
+
+VOID
+EFIAPI
+AmdIntelEmuInternalSys (
+  VOID
+  );
+
+#define NUM_STACK_PAGES  5U
 
 #define GET_PAGE(Address, Index)  \
   ((VOID *)((UINTN)(Address) + ((Index) * SIZE_4KB)))
@@ -638,6 +669,129 @@ InternalPrepareAps (
 }
 
 STATIC
+UINTN
+InternalGetVmImage (
+  OUT VOID  **Data
+  )
+{
+  EFI_STATUS                      Status;
+  EFI_LOADED_IMAGE_PROTOCOL       *LoadedImage;
+  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *FileSystem;
+  EFI_FILE_PROTOCOL               *Root;
+  EFI_FILE_PROTOCOL               *File;
+  UINTN                           FileSize;
+  VOID                            *FileData;
+  EFI_FILE_INFO                   *FileInfo;
+
+  ASSERT (Data != NULL);
+
+  Status = gBS->HandleProtocol (
+                  gImageHandle,
+                  &gEfiLoadedImageProtocolGuid,
+                  (VOID **)&LoadedImage
+                  );
+  ASSERT_EFI_ERROR (Status);
+
+  Status = gBS->HandleProtocol (
+                  LoadedImage->DeviceHandle,
+                  &gEfiSimpleFileSystemProtocolGuid,
+                  (VOID **)&FileSystem
+                  );
+  ASSERT_EFI_ERROR (Status);
+
+  Status = FileSystem->OpenVolume (FileSystem, &Root);
+  ASSERT_EFI_ERROR (Status);
+
+  Status = Root->Open (
+                   Root,
+                   &File,
+                   L"\\AmdIntelEmuRuntime.efi",
+                   EFI_FILE_MODE_READ,
+                   0
+                   );
+  ASSERT_EFI_ERROR (Status);
+
+  FileSize = 0;
+  Status = File->GetInfo (File, &gEfiFileInfoGuid, &FileSize, NULL);
+  ASSERT (Status == EFI_BUFFER_TOO_SMALL);
+
+  FileInfo = AllocatePool (FileSize);
+  ASSERT (FileInfo != NULL);
+
+  Status = File->GetInfo (File, &gEfiFileInfoGuid, &FileSize, FileInfo);
+  ASSERT_EFI_ERROR (Status);
+
+  FileSize = FileInfo->FileSize;
+
+  FileData = AllocatePool (FileSize);
+  ASSERT (FileData != NULL);
+
+  FreePool (FileInfo);
+
+  Status = File->Read (File, &FileSize, FileData);
+  ASSERT_EFI_ERROR (Status);
+
+  File->Close (File);
+  Root->Close (Root);
+
+  *Data = FileData;
+
+  return FileSize;
+}
+
+/**
+  Read image file (specified by UserHandle) into user specified buffer with specified offset
+  and length.
+
+  @param  UserHandle             Image file handle
+  @param  Offset                 Offset to the source file
+  @param  ReadSize               For input, pointer of size to read; For output,
+                                 pointer of size actually read.
+  @param  Buffer                 Buffer to write into
+
+  @retval EFI_SUCCESS            Successfully read the specified part of file
+                                 into buffer.
+
+**/
+EFI_STATUS
+EFIAPI
+CoreReadImageFile (
+  IN     VOID    *UserHandle,
+  IN     UINTN   Offset,
+  IN OUT UINTN   *ReadSize,
+  OUT    VOID    *Buffer
+  )
+{
+  UINTN               EndPosition;
+  IMAGE_FILE_HANDLE  *FHand;
+
+  if (UserHandle == NULL || ReadSize == NULL || Buffer == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (MAX_ADDRESS - Offset < *ReadSize) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  FHand = (IMAGE_FILE_HANDLE  *)UserHandle;
+  ASSERT (FHand->Signature == IMAGE_FILE_HANDLE_SIGNATURE);
+
+  //
+  // Move data from our local copy of the file
+  //
+  EndPosition = Offset + *ReadSize;
+  if (EndPosition > FHand->SourceSize) {
+    *ReadSize = (UINT32)(FHand->SourceSize - Offset);
+  }
+  if (Offset >= FHand->SourceSize) {
+      *ReadSize = 0;
+  }
+
+  CopyMem (Buffer, (CHAR8 *)FHand->Source + Offset, *ReadSize);
+  return EFI_SUCCESS;
+}
+
+STATIC
 VOID
 AmdIntelEmuVirtualizeSystem (
   VOID
@@ -668,6 +822,12 @@ AmdIntelEmuVirtualizeSystem (
   EFI_STATUS                             Status;
   UINTN                                  Index;
 
+  VOID                                   *FileData;
+  UINTN                                  FileSize;
+  VOID                                   *HvPage;
+  PE_COFF_LOADER_IMAGE_CONTEXT           PeContext;
+  IMAGE_FILE_HANDLE                      FileHandle;
+
   if (PcdGetBool (PcdAmdIntelEmuInitCpuExceptionHandler)) {
     InitializeCpuExceptionHandlers (NULL);
   }
@@ -679,10 +839,32 @@ AmdIntelEmuVirtualizeSystem (
     return;
   }
 
+  FileSize = InternalGetVmImage (&FileData);
+
+  FileHandle.Signature  = IMAGE_FILE_HANDLE_SIGNATURE;
+  FileHandle.Source     = FileData;
+  FileHandle.SourceSize = FileSize;
+  FileHandle.FreeBuffer = TRUE;
+
+  ZeroMem (&PeContext, sizeof (PeContext));
+  PeContext.Handle    = &FileHandle;
+  PeContext.ImageRead = (PE_COFF_LOADER_READ_FILE)CoreReadImageFile;
+  //
+  // Get information about the image being loaded
+  //
+  Status = PeCoffLoaderGetImageInfo (&PeContext);
+  ASSERT_EFI_ERROR (Status);
+  ASSERT (!PeContext.RelocationsStripped);
+
+  FileSize = PeContext.ImageSize;
+  if (PeContext.SectionAlignment > EFI_PAGE_SIZE) {
+    FileSize += PeContext.SectionAlignment;
+  }
+
   //
   // TODO: Allocate the Runtime image and assign its entry point here.
   //
-  RuntimeEntry = NULL;
+  //RuntimeEntry = NULL;
 
   //
   // AmdIntelEmuVirtualizeSystem() assumes this size setup.
@@ -696,6 +878,7 @@ AmdIntelEmuVirtualizeSystem (
                    NumProcessors
                      * (sizeof (AMD_INTEL_EMU_THREAD_CONTEXT) + MmioInfoSize)
                    );
+  NumPages += EFI_SIZE_TO_PAGES (FileSize);
   Memory = AllocateAlignedReservedPages (NumPages, SIZE_2MB);
   if (Memory == NULL) {
     DEBUG ((DEBUG_ERROR, "Failed to allocate the HV runtime memory.\n"));
@@ -725,6 +908,35 @@ AmdIntelEmuVirtualizeSystem (
   HostVmcbs      = GET_PAGE (HostStacks, (NumProcessors * NUM_STACK_PAGES));
   GuestVmcbs     = GET_PAGE (HostVmcbs,  NumProcessors);
   ThreadContexts = GET_PAGE (GuestVmcbs, NumProcessors);
+
+  HvPage = GET_PAGE (ThreadContexts, EFI_SIZE_TO_PAGES (
+    NumProcessors
+    * (sizeof (AMD_INTEL_EMU_THREAD_CONTEXT) + MmioInfoSize)
+  ));
+
+  ASSERT_EFI_ERROR (Status);
+  PeContext.ImageAddress =
+    ((UINTN)HvPage + PeContext.SectionAlignment - 1) &
+    ~((UINTN)PeContext.SectionAlignment - 1);
+  //
+  // Load the image from the file into the allocated memory
+  //
+  Status = PeCoffLoaderLoadImage (&PeContext);
+  ASSERT_EFI_ERROR (Status);
+  //
+  // Relocate the image in memory
+  //
+  Status = PeCoffLoaderRelocateImage (&PeContext);
+  ASSERT_EFI_ERROR (Status);
+  //
+  // Flush the Instruction Cache
+  //
+  InvalidateInstructionCacheRange (
+    (VOID *)(UINTN)PeContext.ImageAddress,
+    (UINTN)PeContext.ImageSize
+    );
+  RuntimeEntry = (AMD_INTEL_EMU_RUNTIME_ENTRY)(UINTN)PeContext.EntryPoint;
+  //RuntimeEntry = AmdIntelEmuRuntimeEntryPoint;
   //
   // Zero MsrPm, IoPm and GuestVmcbs.
   //
@@ -735,8 +947,8 @@ AmdIntelEmuVirtualizeSystem (
   //
   GuestVmcb = (AMD_VMCB_CONTROL_AREA *)GuestVmcbs;
   GuestVmcb->InterceptExceptionVectors = (1UL << EXCEPT_IA32_INVALID_OPCODE);
-  GuestVmcb->InterceptInit  = 1;
-  GuestVmcb->InterceptCpuid = 1;
+  GuestVmcb->InterceptInit             = 1;
+  GuestVmcb->InterceptCpuid            = 1;
   //
   // The current implementation requires that the VMRUN intercept always be set
   // in the VMCB.
@@ -869,12 +1081,13 @@ InternalFileMatches (
   IN CONST FILEPATH_DEVICE_PATH  *Node
   )
 {
+  // TODO: WTF
   UINTN PathSize;
 
   ASSERT (BootPathSize > 1);
   ASSERT (BootPathName != NULL);
   ASSERT (Node != NULL);
-
+  // TODO: unaligned
   PathSize     = StrSize (Node->PathName);
   BootPathName = (Node->PathName + PathSize - BootPathSize);
   if ((PathSize >= BootPathSize)

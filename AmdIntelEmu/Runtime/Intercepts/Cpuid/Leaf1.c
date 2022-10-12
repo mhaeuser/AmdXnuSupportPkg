@@ -24,10 +24,10 @@ AmdIntelEmuInternalCpuidLeaf1 (
   //
   VersionEax.Uint32                = 0;
   VersionEax.Bits.SteppingId       = 0x03;
-  VersionEax.Bits.Model            = 0x0C;
+  VersionEax.Bits.Model            = 0x07;
   VersionEax.Bits.FamilyId         = 0x06;
   VersionEax.Bits.ProcessorType    = CPUID_VERSION_INFO_EAX_PROCESSOR_TYPE_ORIGINAL_OEM_PROCESSOR;
-  VersionEax.Bits.ExtendedModelId  = 0x03;
+  VersionEax.Bits.ExtendedModelId  = 0x01;
   VersionEax.Bits.ExtendedFamilyId = 0x00;
   *Eax = VersionEax.Uint32;
   //

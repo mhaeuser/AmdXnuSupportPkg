@@ -371,13 +371,13 @@ AmdIntelEmuInternalInterceptionHandler (
   ASSERT (Vmcb != NULL);
   ASSERT (Registers != NULL);
 
-  DEBUG ((
+  /*DEBUG ((
     DEBUG_VERBOSE,
     "Interception: %a 0x%lx 0x%lx\n",
     InternalGetVmexitName (Vmcb->EXITCODE),
     Vmcb->EXITINFO1,
     Vmcb->EXITINFO2
-    ));
+    ));*/
 
   Vmcb->EVENTINJ.Uint64 = 0;
   //
@@ -456,7 +456,7 @@ AmdIntelEmuInternalInterceptionHandler (
 
   InternalVmcbSanityCheck (Vmcb);
 
-  DEBUG ((DEBUG_VERBOSE, "Returning...\n"));
+  //DEBUG ((DEBUG_VERBOSE, "Returning...\n"));
   //
   // Return Vmcb so it is loaded into rax when returning to the vmrun loop.
   //

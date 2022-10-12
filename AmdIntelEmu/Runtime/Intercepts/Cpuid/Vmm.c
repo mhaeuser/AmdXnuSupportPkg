@@ -64,8 +64,10 @@ InternalCpuidLeaf40000010 (
   //
   // Refer to XNU's tsc.c file for more information.
   //
-  *Eax = TscFreq;
-  *Ebx = BusFreq;
+  *Eax = 3500000;
+  *Ebx = 200000;
+  //*Eax = 3900000;
+  //*Ebx = 100000;
   *Ecx = 0;
   *Edx = 0;
 }
